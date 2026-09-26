@@ -8,6 +8,11 @@ interface TransactionModalProps {
   initialCategoryId: string | null;
   /** Opsional: label nominal yang mau langsung dipilih (dipakai Flash Sale). */
   initialItemLabel?: string | null;
+  /**
+   * Opsional: nama grup/tab yang mau dibuka (dipakai Flash Sale kategori
+   * gabungan seperti E-Wallet, di mana label "Top Up 50.000" ada di tiap dompet).
+   */
+  initialGroup?: string | null;
   /** Katalog PPOB yang sudah disatukan dengan data Supabase. */
   categories?: CategoryData[];
   onTransactionCreated: (trx: TransactionRecord) => void;
@@ -47,6 +52,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   onClose,
   initialCategoryId,
   initialItemLabel,
+  initialGroup,
   categories: availableCategories = CATEGORIES_DATA,
   onTransactionCreated,
   onGoToTracker,
@@ -81,7 +87,17 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     if (initialItemLabel) {
       const cat = availableCategories.find((c) => c.id === initialCategoryId);
       if (cat) {
-        for (let g = 0; g < cat.groups.length; g += 1) {
+        // Cocokkan grup dengan provider Flash Sale dulu — penting untuk
+        // kategori gabungan (E-Wallet) yang labelnya sama di tiap dompet.
+        const providerIdx = initialGroup
+          ? cat.groups.findIndex(
+              (g) => g.name.toLowerCase() === String(initialGroup).toLowerCase()
+            )
+          : -1;
+        const scanOrder = [
+          ...new Set([providerIdx, ...cat.groups.map((_, i) => i)].filter((i) => i >= 0))
+        ];
+        for (const g of scanOrder) {
           const found = cat.groups[g].items.find((it) => it.l === initialItemLabel);
           if (found) {
             nextGroupIdx = g;
@@ -94,7 +110,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
     setGroupIdx(nextGroupIdx);
     setSelectedItem(nextItem);
-  }, [initialCategoryId, isOpen, initialItemLabel, availableCategories]);
+  }, [initialCategoryId, isOpen, initialItemLabel, initialGroup, availableCategories]);
 
   // QRIS Countdown Timer
   useEffect(() => {

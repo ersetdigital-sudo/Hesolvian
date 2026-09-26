@@ -45,6 +45,7 @@ export default function App({ publicData = null }: AppProps) {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [selectedCategoryModal, setSelectedCategoryModal] = useState<string | null>(null);
   const [selectedItemLabel, setSelectedItemLabel] = useState<string | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [isServicesModalOpen, setIsServicesModalOpen] = useState(false);
   const [isPromoModalOpen, setIsPromoModalOpen] = useState(false);
 
@@ -285,16 +286,21 @@ export default function App({ publicData = null }: AppProps) {
    * `itemLabel` dipakai Flash Sale untuk memilih nominal promo otomatis;
    * kalau kosong, user memilih nominalnya sendiri seperti biasa.
    */
-  const openTransaction = (catId: string, itemLabel: string | null = null) => {
+  const openTransaction = (
+    catId: string,
+    itemLabel: string | null = null,
+    group: string | null = null
+  ) => {
     setSelectedCategoryModal(catId);
     setSelectedItemLabel(itemLabel);
+    setSelectedGroup(group);
     setIsTransactionModalOpen(true);
   };
 
   const handleOpenCategoryModal = (catId: string) => openTransaction(catId);
 
   const handleOpenFlashSale = (product: FlashSaleProduct) => {
-    openTransaction(product.categoryId, product.targetLabel ?? null);
+    openTransaction(product.categoryId, product.targetLabel ?? null, product.provider ?? null);
     showToast(`Promo Flash Sale aktif: ${product.name} — ${formatRupiah(product.promoPrice)}`);
   };
 
@@ -437,6 +443,7 @@ export default function App({ publicData = null }: AppProps) {
         onClose={() => setIsTransactionModalOpen(false)}
         initialCategoryId={selectedCategoryModal}
         initialItemLabel={selectedItemLabel}
+        initialGroup={selectedGroup}
         categories={categories}
         onTransactionCreated={handleTransactionCreated}
         onGoToTracker={(trxId) => {

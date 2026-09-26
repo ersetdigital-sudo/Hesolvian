@@ -8,7 +8,9 @@
  *
  * Catatan penting:
  * - `categoryId` HARUS sama dengan id di `categoriesData.ts` (pulsa, data,
- *   pln, pdam, bpjs, internet, gopay, ovo, dana, shopeepay, linkaja, etoll, multi).
+ *   pln, pdam, bpjs, internet, emoney, multi). Untuk `emoney`, isi `provider`
+ *   dengan nama grup/dompetnya (GoPay, OVO, DANA, ShopeePay, LinkAja, e-Toll)
+ *   supaya nominal promo terpilih di grup yang benar.
  * - `targetLabel` opsional: kalau diisi, nominal dengan label persis itu
  *   akan langsung terpilih saat modal transaksi terbuka.
  * - Flash Sale hanya mengubah harga promo + tampilan. Alur transaksi,
@@ -115,7 +117,7 @@ export const FLASH_SALE_PRODUCTS: FlashSaleProduct[] = [
     promoPrice: 18500,
     quota: 100,
     sold: 22,
-    categoryId: 'gopay',
+    categoryId: 'emoney',
     targetLabel: 'Top Up 20.000'
   },
   {
@@ -177,7 +179,7 @@ export const FLASH_SALE_PRODUCTS: FlashSaleProduct[] = [
     promoPrice: 48500,
     quota: 60,
     sold: 18,
-    categoryId: 'ovo',
+    categoryId: 'emoney',
     targetLabel: 'Top Up 50.000'
   },
   {
@@ -251,7 +253,7 @@ export const FLASH_SALE_PRODUCTS: FlashSaleProduct[] = [
     promoPrice: 96000,
     quota: 70,
     sold: 0,
-    categoryId: 'dana',
+    categoryId: 'emoney',
     targetLabel: 'Top Up 100.000'
   }
 ];

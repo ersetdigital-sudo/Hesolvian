@@ -60,8 +60,8 @@ export function detectProductKind(data: {
   }
 
   // 5. Uang elektronik & kartu e-Toll.
-  // Kategori publik kini dipecah per penyedia (gopay, ovo, dana, shopeepay,
-  // linkaja, etoll), jadi semua kode itu dipetakan ke satu jenis timeline.
+  // Kategori uang elektronik disatukan jadi `emoney`; kode lama per penyedia
+  // (gopay, ovo, dst.) tetap dikenali supaya riwayat lawas tidak salah jenis.
   if (
     code.includes('emoney') ||
     code.includes('wallet') ||

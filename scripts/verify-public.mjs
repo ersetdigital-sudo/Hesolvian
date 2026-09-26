@@ -204,8 +204,8 @@ modalChecks.push(
 console.log('\nPemeriksaan isi modal transaksi:');
 modalChecks.forEach((c) => console.log(`   ${c.found ? 'OK  ' : 'HILANG'} ${c.term}`));
 
-/* ---------- 7. uang elektronik: tiap dompet berdiri sendiri ---------- */
-async function modalText(category) {
+/* ---------- 7. e-wallet: satu kategori gabungan, tiap dompet jadi grup ---------- */
+async function modalText(category, tab) {
   await evaluate(
     send,
     `(async () => {
@@ -215,6 +215,18 @@ async function modalText(category) {
       return true;
     })()`
   );
+  if (tab) {
+    await evaluate(
+      send,
+      `(async () => {
+        const modal = document.querySelector('div.fixed.inset-0.z-50');
+        const btn = modal && Array.from(modal.querySelectorAll('button'))
+          .find(b => b.textContent.trim() === ${JSON.stringify(tab)});
+        if (btn) { btn.click(); await new Promise(r => setTimeout(r, 500)); }
+        return Boolean(btn);
+      })()`
+    );
+  }
   // Teks HARUS diambil dari dalam modal saja: pill kategori di belakang modal
   // ikut memuat nama semua dompet, jadi pengecekan negatif bisa salah lolos.
   const text = await evaluate(
@@ -235,19 +247,45 @@ async function modalText(category) {
   return text;
 }
 
-const goPayText = await modalText('GoPay');
-const etollText = await modalText('e-Toll & e-Money');
+const hasCard = async (name) =>
+  evaluate(
+    send,
+    `Boolean(Array.from(document.querySelectorAll('div.cursor-pointer'))
+      .find(d => d.querySelector('h3')?.innerText.trim() === ${JSON.stringify(name)}))`
+  );
+
+const ewalletText = await modalText('E-Wallet');
+const ewalletOvoText = await modalText('E-Wallet', 'OVO');
+const ewalletEtollText = await modalText('E-Wallet', 'e-Toll');
+const splitCardsGone = !(await hasCard('GoPay')) && !(await hasCard('e-Toll & e-Money'));
 
 const ewalletChecks = [
-  { term: 'GoPay: nominal 20.000', found: goPayText.includes('Top Up 20.000') },
-  { term: 'GoPay: nominal 500.000', found: goPayText.includes('Top Up 500.000') },
-  { term: 'GoPay: field nomor GoPay', found: goPayText.includes('Nomor HP GoPay') },
-  { term: 'GoPay: tidak menggabung OVO/DANA (tidak ambigu)', found: !goPayText.includes('OVO') && !goPayText.includes('DANA') },
-  { term: 'e-Toll: field nomor kartu', found: etollText.includes('Nomor Kartu e-Money') },
-  { term: 'e-Toll: nominal kartu', found: etollText.includes('e-Toll 100.000') }
+  {
+    term: 'E-Wallet: nominal grup GoPay (20.000 & 500.000)',
+    found: ewalletText.includes('Top Up 20.000') && ewalletText.includes('Top Up 500.000')
+  },
+  {
+    term: 'E-Wallet: tab semua dompet (GoPay/OVO/DANA/ShopeePay/LinkAja/e-Toll)',
+    found: ['GoPay', 'OVO', 'DANA', 'ShopeePay', 'LinkAja', 'e-Toll'].every((t) =>
+      ewalletText.includes(t)
+    )
+  },
+  { term: 'E-Wallet: field Nomor HP / ID E-Wallet', found: ewalletText.includes('Nomor HP / ID E-Wallet') },
+  {
+    term: 'E-Wallet: tab OVO membuka nominal OVO',
+    found: ewalletOvoText.includes('Top Up 500.000') && ewalletOvoText.includes('OVO')
+  },
+  {
+    term: 'E-Wallet: tab e-Toll membuka nominal kartu',
+    found: ewalletEtollText.includes('e-Toll 100.000')
+  },
+  {
+    term: 'Kategori terpisah GoPay & e-Toll sudah tidak ada',
+    found: splitCardsGone
+  }
 ];
 
-console.log('\nPemeriksaan pemisahan uang elektronik:');
+console.log('\nPemeriksaan kategori E-Wallet gabungan:');
 ewalletChecks.forEach((c) => console.log(`   ${c.found ? 'OK  ' : 'HILANG'} ${c.term}`));
 
 const ok =

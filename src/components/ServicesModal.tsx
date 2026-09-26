@@ -22,12 +22,7 @@ export const ServicesModal: React.FC<ServicesModalProps> = ({
     { id: 'pulsa-isat', categoryId: 'pulsa', name: 'Indosat Ooredoo Hutchison', cat: 'Pulsa & Data', icon: 'signal_cellular_alt', desc: 'Paket Freedom Combo & pulsa reguler' },
     { id: 'pdam-nasional', categoryId: 'pdam', name: 'PDAM & Tagihan Air', cat: 'Utilitas', icon: 'water_drop', desc: 'Cek & bayar tagihan air PDAM seluruh Indonesia' },
     { id: 'bpjs-kes', categoryId: 'bpjs', name: 'BPJS Kesehatan', cat: 'Asuransi', icon: 'health_and_safety', desc: 'Iuran jaminan kesehatan BPJS nasional' },
-    { id: 'ewallet-gopay', categoryId: 'gopay', name: 'Top Up GoPay', cat: 'Uang Elektronik', icon: 'account_balance_wallet', desc: 'Isi saldo GoPay lewat nomor HP terdaftar' },
-    { id: 'ewallet-ovo', categoryId: 'ovo', name: 'Top Up OVO', cat: 'Uang Elektronik', icon: 'savings', desc: 'Isi saldo OVO 24 jam non-stop' },
-    { id: 'ewallet-dana', categoryId: 'dana', name: 'Top Up DANA', cat: 'Uang Elektronik', icon: 'payments', desc: 'Isi saldo DANA ke nomor terdaftar' },
-    { id: 'ewallet-shopeepay', categoryId: 'shopeepay', name: 'Top Up ShopeePay', cat: 'Uang Elektronik', icon: 'shopping_bag', desc: 'Isi saldo ShopeePay langsung masuk' },
-    { id: 'ewallet-linkaja', categoryId: 'linkaja', name: 'Top Up LinkAja', cat: 'Uang Elektronik', icon: 'account_balance', desc: 'Isi saldo LinkAja tanpa ribet' },
-    { id: 'etoll-mandiri', categoryId: 'etoll', name: 'Isi Kartu e-Toll & e-Money', cat: 'Uang Elektronik', icon: 'toll', desc: 'Isi saldo Mandiri e-Money, TapCash, & Flazz' },
+    { id: 'ewallet', categoryId: 'emoney', name: 'Top Up E-Wallet', cat: 'Uang Elektronik', icon: 'account_balance_wallet', desc: 'GoPay, OVO, DANA, ShopeePay, LinkAja & isi kartu e-Toll' },
     { id: 'game-mlbb', categoryId: 'game', name: 'Voucher Game Mobile Legends', cat: 'Game & Entertainment', icon: 'sports_esports', desc: 'Top up Diamond MLBB dan Pass mingguan' },
     { id: 'internet-wifi', categoryId: 'internet', name: 'Tagihan IndiHome & TV Kabel', cat: 'Internet & TV', icon: 'router', desc: 'Pembayaran langganan internet bulanan' },
   ];

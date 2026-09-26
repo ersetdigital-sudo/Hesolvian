@@ -345,13 +345,13 @@ try {
     `Array.from(document.querySelectorAll('#category_id option')).map(o => o.value)`
   );
   const wallets = ['gopay', 'ovo', 'dana', 'shopeepay', 'linkaja', 'etoll'];
-  const missingWallets = wallets.filter((id) => !kategori.includes(id));
+  const leftoverWallets = wallets.filter((id) => kategori.includes(id));
   log(
     '7a. kategori form produk:',
     JSON.stringify(kategori),
-    missingWallets.length === 0 && !kategori.includes('emoney')
-      ? `OK (${kategori.length} kategori, 6 dompet terpisah)`
-      : `PERIKSA (hilang: ${missingWallets.join(', ') || '-'})`
+    kategori.includes('emoney') && leftoverWallets.length === 0
+      ? `OK (${kategori.length} kategori, e-wallet gabung jadi emoney)`
+      : `PERIKSA (sisa kategori terpisah: ${leftoverWallets.join(', ') || '-'})`
   );
 
   await navigate(send, `${BASE}/admin/sistem`);

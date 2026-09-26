@@ -118,7 +118,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                     { name: 'Pulsa', icon: '📱', bg: '#FFEAE4', id: 'pulsa' },
                     { name: 'Data', icon: '📶', bg: '#E3F4FC', id: 'data' },
                     { name: 'PDAM', icon: '💧', bg: '#E0F7FA', id: 'pdam' },
-                    { name: 'GoPay', icon: '💳', bg: '#E0F2FE', id: 'gopay' },
+                    { name: 'E-Wallet', icon: '💳', bg: '#E8EEF7', id: 'emoney' },
                     { name: 'Internet', icon: '🌐', bg: '#EDE7F6', id: 'internet' },
                   ].map((pItem) => (
                     <div

@@ -339,7 +339,9 @@ export async function listCategoryLabels(): Promise<Record<string, string[]>> {
   for (const row of data ?? []) {
     const id = row.category_id as string;
     if (!map[id]) map[id] = [];
-    map[id].push(row.label as string);
+    // Kategori gabungan (E-Wallet) punya label sama di tiap grup/dompet,
+    // jadi cukup tampilkan sekali di dropdown Flash Sale.
+    if (!map[id].includes(row.label as string)) map[id].push(row.label as string);
   }
   return map;
 }

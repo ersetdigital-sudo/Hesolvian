@@ -109,11 +109,12 @@ FAQ yang diatur di **/admin/pusat-bantuan** langsung muncul di accordion
 "Pertanyaan yang Sering Diajukan" pada halaman publik `/bantuan`. Kategori FAQ
 menentukan pill filter-nya (`FAQ_CATEGORIES` di `src/data/faqData.ts`).
 
-Kategori PPOB bersumber dari `src/data/categoriesData.ts`. Uang elektronik
-dipecah **per penyedia** (`gopay`, `ovo`, `dana`, `shopeepay`, `linkaja`,
-`etoll`) — bukan satu kategori gabungan — supaya nominal yang sama
-("Top Up 50.000") tidak ambigu. `src/lib/categories.ts` menyimpan metadata
-nama/ikon/warna sekaligus urutan tampilannya di panel admin (`CATEGORY_ORDER`).
+Kategori PPOB bersumber dari `src/data/categoriesData.ts`. Uang elektronik adalah
+satu kategori gabungan **`emoney` (E-Wallet)**, tapi tiap dompet (GoPay, OVO,
+DANA, ShopeePay, LinkAja, e-Toll) jadi grup/tab terpisah di dalam modal, jadi
+nominal "Top Up 50.000" tetap jelas milik dompet mana. `src/lib/categories.ts`
+menyimpan metadata nama/ikon/warna sekaligus urutan tampilannya di panel admin
+(`CATEGORY_ORDER`).
 
 ## Project Structure
 

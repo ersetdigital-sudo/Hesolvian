@@ -210,26 +210,26 @@ export const CATEGORIES_DATA: CategoryData[] = [
     ]
   },
   /*
-   * Uang elektronik sengaja dipecah per penyedia, bukan digabung jadi satu
-   * kategori "Uang Elektronik": nominalnya identik (Top Up 50.000, dst.)
-   * sehingga label jadi ambigu kalau beberapa dompet berada di satu daftar.
+   * Satu kategori gabungan "E-Wallet" seperti tampilan lama, tapi tiap dompet
+   * (GoPay, OVO, DANA, ShopeePay, LinkAja, e-Toll) jadi grup/tab terpisah di
+   * dalamnya — jadi nominal "Top Up 50.000" tetap jelas milik dompet mana.
    */
   {
-    id: 'gopay',
-    name: 'GoPay',
-    desc: 'Top up saldo GoPay lebih praktis',
+    id: 'emoney',
+    name: 'E-Wallet',
+    desc: 'Top up e-wallet lebih praktis',
     iconName: 'account_balance_wallet',
-    iconBg: '#E0F2FE',
-    iconColor: '#0284C7',
+    iconBg: '#E8EEF7',
+    iconColor: '#0B5FA5',
     field: {
-      label: 'Nomor HP GoPay',
+      label: 'Nomor HP / ID E-Wallet',
       ph: '08xxxxxxxxxx',
-      hint: 'Pastikan nomor sudah terdaftar di aplikasi Gojek.'
+      hint: 'Gunakan nomor HP terdaftar di aplikasi e-wallet; untuk e-Toll isi 16 digit nomor kartu.'
     },
     admin: 1000,
     groups: [
       {
-        name: 'Top Up GoPay',
+        name: 'GoPay',
         items: [
           { l: 'Top Up 20.000', d: 'GoPay', p: 21000 },
           { l: 'Top Up 50.000', d: 'GoPay', p: 51000 },
@@ -237,25 +237,9 @@ export const CATEGORIES_DATA: CategoryData[] = [
           { l: 'Top Up 200.000', d: 'GoPay', p: 201000 },
           { l: 'Top Up 500.000', d: 'GoPay', p: 501000 }
         ]
-      }
-    ]
-  },
-  {
-    id: 'ovo',
-    name: 'OVO',
-    desc: 'Top up saldo OVO lebih praktis',
-    iconName: 'savings',
-    iconBg: '#EDE7F6',
-    iconColor: '#4C3494',
-    field: {
-      label: 'Nomor HP OVO',
-      ph: '08xxxxxxxxxx',
-      hint: 'Pastikan nomor sudah terdaftar di aplikasi OVO.'
-    },
-    admin: 1000,
-    groups: [
+      },
       {
-        name: 'Top Up OVO',
+        name: 'OVO',
         items: [
           { l: 'Top Up 20.000', d: 'OVO', p: 21000 },
           { l: 'Top Up 50.000', d: 'OVO', p: 51000 },
@@ -263,25 +247,9 @@ export const CATEGORIES_DATA: CategoryData[] = [
           { l: 'Top Up 200.000', d: 'OVO', p: 201000 },
           { l: 'Top Up 500.000', d: 'OVO', p: 501000 }
         ]
-      }
-    ]
-  },
-  {
-    id: 'dana',
-    name: 'DANA',
-    desc: 'Top up saldo DANA lebih praktis',
-    iconName: 'payments',
-    iconBg: '#E3F2FD',
-    iconColor: '#118EEA',
-    field: {
-      label: 'Nomor HP DANA',
-      ph: '08xxxxxxxxxx',
-      hint: 'Pastikan nomor sudah terdaftar di aplikasi DANA.'
-    },
-    admin: 1000,
-    groups: [
+      },
       {
-        name: 'Top Up DANA',
+        name: 'DANA',
         items: [
           { l: 'Top Up 20.000', d: 'DANA', p: 21000 },
           { l: 'Top Up 50.000', d: 'DANA', p: 51000 },
@@ -289,25 +257,9 @@ export const CATEGORIES_DATA: CategoryData[] = [
           { l: 'Top Up 200.000', d: 'DANA', p: 201000 },
           { l: 'Top Up 500.000', d: 'DANA', p: 501000 }
         ]
-      }
-    ]
-  },
-  {
-    id: 'shopeepay',
-    name: 'ShopeePay',
-    desc: 'Top up saldo ShopeePay lebih praktis',
-    iconName: 'shopping_bag',
-    iconBg: '#FFEAE4',
-    iconColor: '#EE4D2D',
-    field: {
-      label: 'Nomor HP ShopeePay',
-      ph: '08xxxxxxxxxx',
-      hint: 'Pastikan nomor sudah terdaftar di aplikasi Shopee.'
-    },
-    admin: 1000,
-    groups: [
+      },
       {
-        name: 'Top Up ShopeePay',
+        name: 'ShopeePay',
         items: [
           { l: 'Top Up 20.000', d: 'ShopeePay', p: 21000 },
           { l: 'Top Up 50.000', d: 'ShopeePay', p: 51000 },
@@ -315,25 +267,9 @@ export const CATEGORIES_DATA: CategoryData[] = [
           { l: 'Top Up 200.000', d: 'ShopeePay', p: 201000 },
           { l: 'Top Up 500.000', d: 'ShopeePay', p: 501000 }
         ]
-      }
-    ]
-  },
-  {
-    id: 'linkaja',
-    name: 'LinkAja',
-    desc: 'Top up saldo LinkAja lebih praktis',
-    iconName: 'account_balance',
-    iconBg: '#FCE4EC',
-    iconColor: '#E82529',
-    field: {
-      label: 'Nomor HP LinkAja',
-      ph: '08xxxxxxxxxx',
-      hint: 'Pastikan nomor sudah terdaftar di aplikasi LinkAja.'
-    },
-    admin: 1000,
-    groups: [
+      },
       {
-        name: 'Top Up LinkAja',
+        name: 'LinkAja',
         items: [
           { l: 'Top Up 20.000', d: 'LinkAja', p: 21000 },
           { l: 'Top Up 50.000', d: 'LinkAja', p: 51000 },
@@ -341,29 +277,13 @@ export const CATEGORIES_DATA: CategoryData[] = [
           { l: 'Top Up 200.000', d: 'LinkAja', p: 201000 },
           { l: 'Top Up 500.000', d: 'LinkAja', p: 501000 }
         ]
-      }
-    ]
-  },
-  {
-    id: 'etoll',
-    name: 'e-Toll & e-Money',
-    desc: 'Isi kartu e-Money & e-Toll',
-    iconName: 'toll',
-    iconBg: '#E8EEF7',
-    iconColor: '#0B5FA5',
-    field: {
-      label: 'Nomor Kartu e-Money',
-      ph: '16 digit nomor kartu',
-      hint: 'Nomor kartu tertera di bagian belakang kartu e-Money / TapCash / Flazz.'
-    },
-    admin: 1500,
-    groups: [
+      },
       {
-        name: 'Isi Kartu e-Toll',
+        name: 'e-Toll',
         items: [
-          { l: 'e-Toll 50.000', d: 'Mandiri e-Money / TapCash / Flazz', p: 51500 },
-          { l: 'e-Toll 100.000', d: 'Mandiri e-Money / TapCash / Flazz', p: 101500 },
-          { l: 'e-Toll 200.000', d: 'Mandiri e-Money / TapCash / Flazz', p: 201500 }
+          { l: 'e-Toll 50.000', d: 'Mandiri e-Money / TapCash / Flazz', p: 51000 },
+          { l: 'e-Toll 100.000', d: 'Mandiri e-Money / TapCash / Flazz', p: 101000 },
+          { l: 'e-Toll 200.000', d: 'Mandiri e-Money / TapCash / Flazz', p: 201000 }
         ]
       }
     ]
