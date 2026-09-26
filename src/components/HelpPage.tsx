@@ -61,7 +61,12 @@ export const HelpPage: React.FC<HelpPageProps> = ({
       setIsSubmitting(false);
       setTicketResult({
         id: generatedId,
-        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
+        time:
+          new Date().toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Asia/Jakarta'
+          }) + ' WIB'
       });
       showToast(`Tiket Resolusi #${generatedId} berhasil diterbitkan!`);
     }, 850);

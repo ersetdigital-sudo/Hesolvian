@@ -165,11 +165,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setStep(4);
 
       const now = new Date();
-      const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+      // Labelnya "WIB", jadi jam & tanggalnya memang harus dikunci ke Asia/Jakarta,
+      // bukan zona waktu perangkat pengguna.
+      const timeStr =
+        now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) + ' WIB';
       const dateStr = now.toLocaleDateString('id-ID', {
         day: 'numeric',
         month: 'short',
-        year: 'numeric'
+        year: 'numeric',
+        timeZone: 'Asia/Jakarta'
       });
 
       let tokenLabel = 'Nomor Referensi';

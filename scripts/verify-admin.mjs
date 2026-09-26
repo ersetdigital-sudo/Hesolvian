@@ -63,7 +63,11 @@ async function connect(url) {
       return;
     }
     if (msg.method === 'Runtime.exceptionThrown') {
-      consoleErrors.push(`exception: ${msg.params.exceptionDetails?.text ?? 'unknown'}`);
+      const detail = msg.params.exceptionDetails ?? {};
+      const desc = detail.exception?.description ? String(detail.exception.description).split('\n')[0] : '';
+      consoleErrors.push(
+        `exception: ${detail.text ?? 'unknown'}${desc ? ` — ${desc}` : ''}${detail.url ? ` @ ${detail.url}` : ''}`
+      );
     }
     if (msg.method === 'Runtime.consoleAPICalled' && msg.params.type === 'error') {
       const text = (msg.params.args ?? [])
