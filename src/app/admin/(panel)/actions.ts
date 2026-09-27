@@ -202,93 +202,6 @@ export async function deleteFlashSaleAction(id: string): Promise<ActionState> {
 }
 
 /* ============================================================
- * ARTIKEL
- * ============================================================ */
-
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 80);
-}
-
-export async function saveArticleAction(
-  _prevState: ActionState | null,
-  formData: FormData
-): Promise<ActionState> {
-  try {
-    await requireAdmin();
-  } catch {
-    return { ok: false, message: 'Sesi admin habis. Silakan login ulang.' };
-  }
-
-  const id = text(formData, '_id') || undefined;
-  const title = text(formData, 'title');
-  if (!title) return { ok: false, message: 'Judul artikel wajib diisi.' };
-
-  const status = (text(formData, 'status', 'draft') as 'draft' | 'published' | 'archived') || 'draft';
-
-  // Gambar sampul tidak diatur dari panel: field unggahnya sudah dibuang dan
-  // artikel tidak punya halaman publik yang menampilkan sampulnya. Kolom
-  // `cover_image_url` / `cover_image_public_id` dibiarkan dan tidak ikut di-update.
-  const payload = {
-    title,
-    slug: text(formData, 'slug') || slugify(title),
-    excerpt: text(formData, 'excerpt'),
-    content: text(formData, 'content'),
-    author: text(formData, 'author', 'Admin'),
-    status,
-    published_at: status === 'published' ? new Date().toISOString() : null
-  };
-
-  try {
-    if (id) {
-      const { error } = await supabaseAdmin()
-        .from('articles')
-        .update({ ...payload, published_at: status === 'published' ? undefined : null })
-        .eq('id', id);
-      if (error) return { ok: false, message: describeDbError(error) };
-    } else {
-      const { error } = await supabaseAdmin().from('articles').insert(payload);
-      if (error) return { ok: false, message: describeDbError(error) };
-    }
-  } catch (error) {
-    return { ok: false, message: describeDbError(error) };
-  }
-
-  revalidateEverything();
-  return { ok: true, message: id ? 'Artikel diperbarui.' : 'Artikel ditambahkan.' };
-}
-
-export async function deleteArticleAction(id: string): Promise<ActionState> {
-  try {
-    await requireAdmin();
-  } catch {
-    return { ok: false, message: 'Sesi admin habis. Silakan login ulang.' };
-  }
-
-  try {
-    const { data: row } = await supabaseAdmin().from('articles').select('cover_image_public_id').eq('id', id).maybeSingle();
-    const { error } = await supabaseAdmin().from('articles').delete().eq('id', id);
-    if (error) return { ok: false, message: describeDbError(error) };
-
-    if (row?.cover_image_public_id) {
-      await destroyCloudinaryAsset(row.cover_image_public_id).catch(() => ({ ok: false }));
-    }
-  } catch (error) {
-    return { ok: false, message: describeDbError(error) };
-  }
-
-  revalidateEverything();
-  return { ok: true, message: 'Artikel dihapus.' };
-}
-
-/* ============================================================
  * PUSAT BANTUAN (FAQ)
  * ============================================================ */
 
@@ -561,13 +474,6 @@ export async function deleteFaqByFormAction(formData: FormData): Promise<void> {
   const id = text(formData, 'id');
   if (!id) return;
   await deleteFaqAction(id);
-}
-
-/** Hapus artikel melalui tombol yang butuh id dari FormData. */
-export async function deleteArticleByFormAction(formData: FormData): Promise<void> {
-  const id = text(formData, 'id');
-  if (!id) return;
-  await deleteArticleAction(id);
 }
 
 /** Hapus produk melalui tombol yang butuh id dari FormData. */

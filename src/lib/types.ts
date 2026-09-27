@@ -1,7 +1,6 @@
 /** Baris tabel & bentuk data yang dipakai panel admin. */
 
 export type ContentStatus = 'active' | 'draft' | 'archived';
-export type ArticleStatus = 'draft' | 'published' | 'archived';
 export type TransactionStatus = 'success' | 'pending' | 'processing' | 'failed';
 
 export interface ProductRow {
@@ -39,21 +38,6 @@ export interface FlashSaleRow {
   image_public_id: string | null;
   status: ContentStatus;
   sort_order: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ArticleRow {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  cover_image_url: string | null;
-  cover_image_public_id: string | null;
-  author: string;
-  status: ArticleStatus;
-  published_at: string | null;
   created_at: string;
   updated_at: string;
 }

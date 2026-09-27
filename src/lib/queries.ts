@@ -1,8 +1,6 @@
 import { SITE_NAME } from './site';
 import { supabaseAdmin } from './supabase';
 import type {
-  ArticleRow,
-  ArticleStatus,
   BrandSettings,
   ContactSettings,
   DashboardData,
@@ -90,26 +88,6 @@ export async function getFlashSale(id: string): Promise<FlashSaleRow | null> {
   const { data, error } = await supabaseAdmin().from('flash_sales').select('*').eq('id', id).maybeSingle();
   if (error) throw new Error(error.message);
   return (data as FlashSaleRow) ?? null;
-}
-
-/* ============================================================
- * ARTIKEL
- * ============================================================ */
-
-export async function listArticles(): Promise<ArticleRow[]> {
-  const { data, error } = await supabaseAdmin()
-    .from('articles')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return (data ?? []) as ArticleRow[];
-}
-
-export async function getArticle(id: string): Promise<ArticleRow | null> {
-  const { data, error } = await supabaseAdmin().from('articles').select('*').eq('id', id).maybeSingle();
-  if (error) throw new Error(error.message);
-  return (data as ArticleRow) ?? null;
 }
 
 /* ============================================================
@@ -378,4 +356,4 @@ export async function listCategoryLabels(): Promise<Record<string, string[]>> {
   return map;
 }
 
-export type { ArticleStatus, TransactionStatus };
+export type { TransactionStatus };

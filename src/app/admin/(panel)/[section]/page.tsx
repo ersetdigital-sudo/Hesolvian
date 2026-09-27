@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Hanya menerima slug navigasi yang memang terdaftar sebagai halaman penampung.
- * Route statis (/admin/produk, /admin/artikel, dst.) selalu menang, jadi tidak
+ * Route statis (/admin/produk, /admin/pembayaran, dst.) selalu menang, jadi tidak
  * ada risiko menghabisi halaman yang sudah jadi.
  */
 export default async function PlaceholderAdminPage({ params }: { params: Promise<{ section: string }> }) {
@@ -43,7 +43,7 @@ export default async function PlaceholderAdminPage({ params }: { params: Promise
             Navigasi sidebar sudah tersusun rapi, dan halaman ini disiapkan sebagai tempat fitur
             <span className="font-semibold text-[#1d1c18]"> {item?.label} </span>
             ketika nanti diaktifkan. Modul yang sudah bisa dipakai sekarang: Dasbor, Produk, Flash Sale,
-            Transaksi, Artikel, Pusat Bantuan, dan Pengaturan Sistem.
+            Transaksi, Metode Pembayaran, Pusat Bantuan, dan Pengaturan Sistem.
           </p>
         </div>
 

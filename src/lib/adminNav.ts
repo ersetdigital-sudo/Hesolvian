@@ -46,7 +46,6 @@ export const ADMIN_NAV: AdminNavGroup[] = [
   {
     title: 'Manajemen',
     items: [
-      { label: 'Artikel', href: '/admin/artikel', icon: 'article', crumb: 'Konten', ready: true },
       { label: 'Peran & Izin', href: '/admin/peran', icon: 'admin_panel_settings', crumb: 'Akses', ready: false },
       { label: 'Tagihan & Langganan', href: '/admin/langganan', icon: 'credit_card', crumb: 'Penagihan', ready: false },
       { label: 'Integrasi', href: '/admin/integrasi', icon: 'extension', crumb: 'Koneksi', ready: false }

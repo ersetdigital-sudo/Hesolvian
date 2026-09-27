@@ -30,7 +30,7 @@ export interface ImageUploadProps {
   publicIdField: string;
   initialUrl?: string | null;
   initialPublicId?: string | null;
-  /** Sub-folder Cloudinary, mis. 'produk' atau 'artikel'. */
+  /** Sub-folder Cloudinary, mis. 'pembayaran'. */
   folder?: string;
   label?: string;
   hint?: string;
