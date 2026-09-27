@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import AdminForm from '@/components/admin/AdminForm';
-import { Alert, Field, Select, TextInput } from '@/components/admin/ui';
+import { useMemo, useState, useTransition } from 'react';
+import { Field, Select, TextInput, buttonClass } from '@/components/admin/ui';
+import { showToast } from '@/components/admin/Toaster';
 import { updateTransactionAction } from '@/app/admin/(panel)/actions';
 import { CATEGORY_ORDER, categoryMeta } from '@/lib/categories';
 import { formatNumber, formatRupiah } from '@/lib/format';
-import type { TransactionRow } from '@/lib/types';
+import type { ActionState, TransactionRow } from '@/lib/types';
 
 const METHODS = ['QRIS', 'Transfer Bank', 'Tunai Agen'];
 const STATUSES = [
@@ -16,11 +16,24 @@ const STATUSES = [
   { value: 'failed', label: 'Gagal / batal' }
 ];
 
-export default function OrderForm({ row }: { row: TransactionRow }) {
+/**
+ * Penyunting pesanan yang dirender di dalam tabel (`OrdersTable`), jadi admin
+ * tidak pernah berpindah halaman. Selesai → panggil `onSaved`, batal → `onCancel`.
+ */
+export default function OrderForm({
+  row,
+  onCancel,
+  onSaved
+}: {
+  row: TransactionRow;
+  onCancel?: () => void;
+  onSaved?: () => void;
+}) {
   const [unitPrice, setUnitPrice] = useState(row.unit_price);
   const [qty, setQty] = useState(row.qty);
   const [adminFee, setAdminFee] = useState(row.admin_fee);
   const [discount, setDiscount] = useState(row.discount);
+  const [isPending, startTransition] = useTransition();
 
   const total = useMemo(
     () => Math.max(0, unitPrice * qty + adminFee - discount),
@@ -32,11 +45,47 @@ export default function OrderForm({ row }: { row: TransactionRow }) {
     return Number.isFinite(parsed) ? parsed : 0;
   };
 
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    formData.set('_id', row.id);
+
+    startTransition(async () => {
+      try {
+        const result: ActionState = await updateTransactionAction(null, formData);
+        showToast(result.message || (result.ok ? 'Perubahan disimpan.' : 'Gagal menyimpan.'), result.ok ? 'success' : 'error');
+        if (result.ok) onSaved?.();
+      } catch {
+        showToast('Gagal menyimpan perubahan.', 'error');
+      }
+    });
+  };
+
   return (
-    <AdminForm action={updateTransactionAction} id={row.id} submitLabel="Simpan perubahan" cancelHref="/admin/pesanan">
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <Field label="Kategori" htmlFor="category_id">
-          <Select id="category_id" name="category_id" defaultValue={row.category_id || 'pulsa'}>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {row.token_code && (
+        <div className="rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[#166534]">
+            {row.token_label || 'Token / Serial Number'}
+          </p>
+          <p className="mt-1 font-mono text-[15px] font-bold tracking-wider text-[#166534]">{row.token_code}</p>
+          {row.token_sub && <p className="mt-1 text-[12px] text-[#57534e]">{row.token_sub}</p>}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Field label="Status" htmlFor={`status-${row.id}`}>
+          <Select id={`status-${row.id}`} name="status" defaultValue={row.status}>
+            {STATUSES.map((status) => (
+              <option key={status.value} value={status.value}>
+                {status.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <Field label="Kategori" htmlFor={`category-${row.id}`}>
+          <Select id={`category-${row.id}`} name="category_id" defaultValue={row.category_id || 'pulsa'}>
             {CATEGORY_ORDER.map((id) => (
               <option key={id} value={id}>
                 {categoryMeta(id).name}
@@ -45,31 +94,33 @@ export default function OrderForm({ row }: { row: TransactionRow }) {
           </Select>
         </Field>
 
-        <Field label="Status pesanan" htmlFor="status">
-          <Select id="status" name="status" defaultValue={row.status}>
-            {STATUSES.map((status) => (
-              <option key={status.value} value={status.value}>
-                {status.label}
+        <Field label="Metode bayar" htmlFor={`method-${row.id}`}>
+          <Select id={`method-${row.id}`} name="method" defaultValue={row.method || 'QRIS'}>
+            {[...new Set([row.method, ...METHODS])].filter(Boolean).map((method) => (
+              <option key={method} value={method}>
+                {method}
               </option>
             ))}
           </Select>
         </Field>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <Field label="Nama produk" htmlFor="product_label" hint="Isi bebas, mis. 'Pulsa 25.000'.">
-          <TextInput id="product_label" name="product_label" defaultValue={row.product_label} required />
-        </Field>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="sm:col-span-2">
+          <Field label="Nama produk" htmlFor={`product-${row.id}`}>
+            <TextInput id={`product-${row.id}`} name="product_label" defaultValue={row.product_label} required />
+          </Field>
+        </div>
 
-        <Field label="Nomor pelanggan" htmlFor="customer_id" optional hint="Nomor HP, ID pelanggan, atau nomor meter.">
-          <TextInput id="customer_id" name="customer_id" defaultValue={row.customer_id} placeholder="081288294910" />
+        <Field label="Nomor pelanggan" htmlFor={`cust-${row.id}`} optional>
+          <TextInput id={`cust-${row.id}`} name="customer_id" defaultValue={row.customer_id} placeholder="081288294910" />
         </Field>
       </div>
 
-      <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
-        <Field label="Harga satuan" htmlFor="unit_price">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Field label="Harga satuan" htmlFor={`price-${row.id}`}>
           <TextInput
-            id="unit_price"
+            id={`price-${row.id}`}
             name="unit_price"
             type="number"
             min={0}
@@ -78,9 +129,9 @@ export default function OrderForm({ row }: { row: TransactionRow }) {
           />
         </Field>
 
-        <Field label="Jumlah" htmlFor="qty">
+        <Field label="Jumlah" htmlFor={`qty-${row.id}`}>
           <TextInput
-            id="qty"
+            id={`qty-${row.id}`}
             name="qty"
             type="number"
             min={1}
@@ -89,9 +140,9 @@ export default function OrderForm({ row }: { row: TransactionRow }) {
           />
         </Field>
 
-        <Field label="Biaya admin" htmlFor="admin_fee">
+        <Field label="Biaya admin" htmlFor={`admin-${row.id}`}>
           <TextInput
-            id="admin_fee"
+            id={`admin-${row.id}`}
             name="admin_fee"
             type="number"
             min={0}
@@ -100,9 +151,9 @@ export default function OrderForm({ row }: { row: TransactionRow }) {
           />
         </Field>
 
-        <Field label="Diskon" htmlFor="discount">
+        <Field label="Diskon" htmlFor={`discount-${row.id}`}>
           <TextInput
-            id="discount"
+            id={`discount-${row.id}`}
             name="discount"
             type="number"
             min={0}
@@ -112,29 +163,34 @@ export default function OrderForm({ row }: { row: TransactionRow }) {
         </Field>
       </div>
 
-      <Field label="Metode bayar" htmlFor="method">
-        <Select id="method" name="method" defaultValue={row.method || 'QRIS'}>
-          {[...new Set([row.method, ...METHODS])].filter(Boolean).map((method) => (
-            <option key={method} value={method}>
-              {method}
-            </option>
-          ))}
-        </Select>
-      </Field>
-
-      <div className="flex items-center justify-between rounded-xl border border-[#f0d9d2] bg-[#fdf3f0] px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[#f0d9d2] bg-[#fdf3f0] px-4 py-3">
         <div>
           <p className="text-[12px] font-semibold text-[#9e3823]">Total pesanan setelah diubah</p>
           <p className="mt-1 text-[11.5px] text-[#8a716c]">
             ({formatNumber(unitPrice)} × {qty}) + {formatNumber(adminFee)} − {formatNumber(discount)}
           </p>
         </div>
-        <p className="text-[22px] font-bold leading-none tracking-[-0.02em] text-[#7e210e]">{formatRupiah(total)}</p>
+        <p className="text-[20px] font-bold leading-none tracking-[-0.02em] text-[#7e210e]">{formatRupiah(total)}</p>
       </div>
 
-      <Alert>
-        Perubahan langsung tersimpan ke ledger dan riwayat transaksi. Nama pelanggan tidak lagi dipakai di pesanan.
-      </Alert>
-    </AdminForm>
+      <div className="flex flex-wrap items-center gap-2 border-t border-[#f0efed] pt-5">
+        <button type="submit" disabled={isPending} className={buttonClass('primary')}>
+          {isPending ? (
+            <>
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              Menyimpan…
+            </>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-[17px]">save</span>
+              Simpan perubahan
+            </>
+          )}
+        </button>
+        <button type="button" onClick={onCancel} disabled={isPending} className={buttonClass('outline')}>
+          Batal
+        </button>
+      </div>
+    </form>
   );
 }

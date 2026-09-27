@@ -359,6 +359,35 @@ export async function updateTransactionAction(
   return { ok: true, message: `Pesanan ${id} berhasil diperbarui.` };
 }
 
+/** Ubah status pesanan dari tabel Manajemen Pesanan tanpa membuka halaman. */
+export async function setTransactionStatusAction(
+  id: string,
+  status: TransactionStatus
+): Promise<ActionState> {
+  try {
+    await requireAdmin();
+  } catch {
+    return { ok: false, message: 'Sesi admin habis. Silakan login ulang.' };
+  }
+
+  const trxId = String(id ?? '').trim();
+  if (!trxId) return { ok: false, message: 'ID pesanan tidak ditemukan.' };
+
+  const allowed: TransactionStatus[] = ['pending', 'processing', 'success', 'failed'];
+  if (!allowed.includes(status)) return { ok: false, message: 'Status tidak dikenal.' };
+
+  try {
+    const { error } = await supabaseAdmin().from('transactions').update({ status }).eq('id', trxId);
+    if (error) return { ok: false, message: describeDbError(error) };
+  } catch (error) {
+    return { ok: false, message: describeDbError(error) };
+  }
+
+  revalidateEverything();
+  const label = { pending: 'Menunggu', processing: 'Diproses', success: 'Berhasil', failed: 'Gagal' }[status];
+  return { ok: true, message: `Status ${trxId} kini "${label}".` };
+}
+
 export async function deleteTransactionAction(id: string): Promise<ActionState> {
   try {
     await requireAdmin();

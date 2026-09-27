@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import AdminShell from '@/components/admin/AdminShell';
+import { AdminToaster } from '@/components/admin/Toaster';
 import { ADMIN_USER } from '@/lib/adminNav';
 import { isAdminAuthenticated } from '@/lib/adminAuth';
 import { getSiteSettings } from '@/lib/queries';
@@ -28,6 +29,7 @@ export default async function AdminPanelLayout({ children }: { children: ReactNo
       userName={ADMIN_USER.name}
       userRole={ADMIN_USER.role}
     >
+      <AdminToaster />
       {children}
     </AdminShell>
   );

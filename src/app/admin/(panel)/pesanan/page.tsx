@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
-import DeleteButton from '@/components/admin/DeleteButton';
-import { EmptyState, LinkButton, PageHeader, TransactionStatusPill } from '@/components/admin/ui';
-import { deleteTransactionAction } from '@/app/admin/(panel)/actions';
-import { categoryMeta } from '@/lib/categories';
-import { formatDateTime, formatNumber, formatRupiah } from '@/lib/format';
+import { EmptyState, LinkButton, PageHeader } from '@/components/admin/ui';
+import { formatNumber } from '@/lib/format';
 import { listTransactions } from '@/lib/queries';
 import type { TransactionRow, TransactionStatus } from '@/lib/types';
+import OrdersTable from './OrdersTable';
 
 export const metadata: Metadata = {
   title: 'Manajemen Pesanan — Panel Admin Hesolvian',
@@ -50,7 +48,7 @@ export default async function OrdersPage({
     <div className="mx-auto max-w-[1600px]">
       <PageHeader
         title="Manajemen Pesanan"
-        description="Kelola pesanan pelanggan: ubah status, produk, jumlah, nominal, dan metode pembayaran kapan saja."
+        description="Ubah status, produk, jumlah, nominal, dan metode pembayaran langsung dari tabel — tanpa membuka halaman lain."
         action={
           <LinkButton href="/admin/transaksi/baru">
             <span className="material-symbols-outlined text-[17px]">add</span>
@@ -113,70 +111,7 @@ export default async function OrdersPage({
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[880px] border-collapse text-left">
-              <thead>
-                <tr className="border-b border-[#f0efed] text-[11px] font-bold uppercase tracking-wide text-[#a8a29e]">
-                  <th className="px-5 py-3 sm:px-6">ID &amp; waktu</th>
-                  <th className="px-4 py-3">Produk</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Qty</th>
-                  <th className="px-4 py-3 text-right">Total</th>
-                  <th className="px-4 py-3">Metode</th>
-                  <th className="px-4 py-3 text-right sm:px-6">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => {
-                  const meta = categoryMeta(row.category_id);
-                  return (
-                    <tr key={row.id} className="border-b border-[#f7f6f4] last:border-0 hover:bg-[#fafaf9]">
-                      <td className="px-5 py-3.5 sm:px-6">
-                        <p className="font-mono text-[12px] font-semibold text-[#1d1c18]">{row.id}</p>
-                        <p className="mt-0.5 text-[11px] text-[#a8a29e]">{formatDateTime(row.created_at)}</p>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-                            style={{ backgroundColor: meta.bg }}
-                          >
-                            <span className="material-symbols-outlined text-[15px]" style={{ color: meta.color }}>
-                              {meta.icon}
-                            </span>
-                          </span>
-                          <div className="min-w-0">
-                            <p className="truncate text-[12.5px] text-[#1d1c18]">{row.product_label}</p>
-                            <p className="truncate text-[11px] text-[#a8a29e]">{meta.name}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3.5">
-                        <TransactionStatusPill status={row.status} />
-                      </td>
-                      <td className="px-4 py-3.5 text-right text-[12.5px] text-[#57534e]">{formatNumber(row.qty)}</td>
-                      <td className="px-4 py-3.5 text-right text-[13px] font-bold text-[#1d1c18]">
-                        {formatRupiah(row.total)}
-                      </td>
-                      <td className="px-4 py-3.5 text-[12px] text-[#57534e]">{row.method}</td>
-                      <td className="px-4 py-3.5 sm:px-6">
-                        <div className="flex items-center justify-end gap-1">
-                          <a
-                            href={`/admin/pesanan/${encodeURIComponent(row.id)}`}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#e7e5e4] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#1d1c18] transition hover:bg-[#fafaf9]"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">edit</span>
-                            Ubah
-                          </a>
-                          <DeleteButton action={deleteTransactionAction} id={row.id} name={row.id} />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <OrdersTable rows={rows} />
         )}
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#f0efed] px-5 py-3.5 sm:px-6">
