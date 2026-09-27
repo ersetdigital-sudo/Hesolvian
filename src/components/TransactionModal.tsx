@@ -644,10 +644,45 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             </div>
           )}
 
-          {/* STEP 3: QRIS PAYMENT */}
+          {/* STEP 3: CHECKOUT PEMBAYARAN */}
           {step === 3 && (
             <div className="text-center space-y-4">
-              <div className="space-y-1">
+              {/* Pemilih metode pembayaran — pelanggan boleh ganti metode di sini. */}
+              {payMethods.length > 1 && (
+                <div className="space-y-2">
+                  <div className="text-[12px] font-bold text-[#6B5A53] text-left">
+                    Pilih Metode Pembayaran
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {payMethods.map((m) => {
+                      const isSelected = activeMethod.id === m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setPayMethod(m.id)}
+                          className={`text-left p-3 rounded-2xl border transition-all cursor-pointer flex items-center gap-2.5 ${
+                            isSelected
+                              ? 'bg-white border-[#B4432C] ring-2 ring-[#B4432C]/40 shadow-sm'
+                              : 'bg-[#FBF6EF] border-[#E8DDD2] hover:bg-white hover:border-[#dec0ba]'
+                          }`}
+                        >
+                          <span
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                              isSelected ? 'bg-[#B4432C] text-white' : 'bg-[#F3EADF] text-[#6B5A53]'
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[18px]">{m.icon}</span>
+                          </span>
+                          <span className="text-[12.5px] font-bold text-[#2C211D]">{m.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
                 <div className="text-[13px] text-[#6B5A53]">
                   {activeMethod.id === 'qris'
                     ? 'Pindai kode QRIS menggunakan m-Banking atau E-Wallet:'
@@ -657,6 +692,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 </div>
                 <div className="text-3xl font-extrabold text-[#B4432C] tracking-tight">
                   {formatRupiah(totalOf())}
+                </div>
+
+                {/* No. Pesanan ditampilkan jelas untuk semua metode. */}
+                <div className="inline-flex items-center gap-2 bg-[#FBF6EF] border border-[#E8DDD2] rounded-xl px-3.5 py-2">
+                  <span className="material-symbols-outlined text-[16px] text-[#B4432C]">
+                    receipt_long
+                  </span>
+                  <span className="text-[12px] text-[#6B5A53]">No. Pesanan</span>
+                  <span className="font-mono text-[12.5px] font-bold text-[#2C211D]">{trxRef}</span>
                 </div>
               </div>
 
@@ -711,10 +755,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   </text>
                 </svg>
                 )}
-              </div>
-
-              <div className="text-[11px] text-[#9B8A82]">
-                NMID: ID1024887650123 · Merchant: HESOLVIAN PPOB · {trxRef}
               </div>
 
               <div className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#9A6B12] bg-[#FBF0D8] px-3.5 py-1.5 rounded-full border border-[#9A6B12]/20">
