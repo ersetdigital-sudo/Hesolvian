@@ -24,6 +24,11 @@ import { resolvePublicData } from './lib/publicCatalog';
 import { detectProductKind } from './utils/timelineHelper';
 import type { PublicData } from './lib/publicTypes';
 import type { PaymentSettings } from './lib/types';
+import {
+  lookupTransactionAction,
+  savePublicTransactionAction,
+  setPublicTransactionStatusAction
+} from './app/actions';
 
 interface AppProps {
   /** Katalog + Flash Sale dari Supabase. `null` = pakai data statis. */
@@ -70,16 +75,35 @@ export default function App({ publicData = null, payments = null }: AppProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // URL query parameter support
+  // URL query parameter support: `?trx=HSV...` langsung menarik pesanan asli
+  // dari Supabase supaya tautan yang dibagikan tetap bisa dibuka di perangkat lain.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const trxParam = params.get('trx');
-    if (trxParam && transactions[trxParam]) {
-      setCurrentTrxId(trxParam);
-      setSearchQuery(trxParam);
-      setActiveTab('cek-transaksi');
-    }
-  }, [transactions]);
+    if (!trxParam) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await lookupTransactionAction(trxParam);
+        if (cancelled || !result.ok || result.records.length === 0) return;
+        setTransactions((prev) => {
+          const next = { ...prev };
+          for (const record of result.records) next[record.id] = record;
+          return next;
+        });
+        setCurrentTrxId(result.records[0].id);
+        setSearchQuery(result.records[0].id);
+        setActiveTab('cek-transaksi');
+      } catch {
+        /* tautan hanya opsional — diamkan kalau gagal */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Ctrl+K keyboard shortcut
   useEffect(() => {
@@ -95,81 +119,56 @@ export default function App({ publicData = null, payments = null }: AppProps) {
 
   const currentTrx = currentTrxId ? transactions[currentTrxId] : undefined;
 
-  const handleSearch = (queryOverride?: string) => {
+  const handleSearch = async (queryOverride?: string) => {
     const q = (queryOverride || searchQuery).trim();
     if (!q) {
       showToast('Mohon masukkan nomor transaksi atau nomor pelanggan!');
       return;
     }
 
-    // Direct match by ID
+    // Transaksi yang baru dibuat di sesi ini sudah ada di state — pakai langsung.
     if (transactions[q]) {
       setCurrentTrxId(q);
       showToast('Transaksi ditemukan dan sinkron!');
       return;
     }
 
-    // Match by customer ID / phone
     const foundByCust = Object.values(transactions).find(
       (t) => t.custId.replace(/\D/g, '') === q.replace(/\D/g, '') || t.custId.includes(q)
     );
-
     if (foundByCust) {
       setCurrentTrxId(foundByCust.id);
-      showToast(`Ditemukan transaksi ${foundByCust.id} untuk ${foundByCust.custName}`);
+      showToast(`Ditemukan transaksi ${foundByCust.id}`);
       return;
     }
 
-    // Dynamic simulated record generation for arbitrary numbers
-    const newId = q.startsWith('HSV')
-      ? q
-      : `HSV20250518-${Math.floor(1000 + Math.random() * 9000)}`;
-    
-    const simulatedRecord: TransactionRecord = {
-      id: newId,
-      status: 'success',
-      statusLabel: 'Berhasil Diverifikasi',
-      badgeBg: 'bg-[#E4F3EC]',
-      badgeColor: 'text-[#1F7A54]',
-      accentBg: 'bg-[#1F7A54]',
-      createdAt: 'Hari ini, 15:45 WIB',
-      clearedAt: '15:45:18 WIB',
-      durationText: 'Instan',
-      stepActive: 4,
-      stepProgressText: 'Lengkap (4 dari 4 Tahapan)',
-      steps: [
-        { step: 1, title: 'Pesanan Dibuat', subtitle: 'ID transaksi diverifikasi', status: 'completed', icon: 'receipt_long' },
-        { step: 2, title: 'Pembayaran QRIS', subtitle: 'Mutasi kliring lunas', status: 'completed', icon: 'qr_code_scanner' },
-        { step: 3, title: 'Routing Gateway', subtitle: 'Switching provider sukses', status: 'completed', icon: 'hub' },
-        { step: 4, title: 'SN / Token Terbit', subtitle: 'Kuitansi sah diterbitkan', status: 'completed', icon: 'verified' },
-      ],
-      tokenLabel: 'SN Provider Otentik',
-      tokenCode: `089${Math.floor(1000000000 + Math.random() * 9000000000)}`,
-      tokenSub: 'Layanan aktif secara normal. Kuitansi resmi dapat dicetak.',
-      hasCopyToken: true,
-      category: searchType === 'trx' ? 'E-Money / Dompet Digital' : 'Tagihan Umum',
-      categoryCode: 'PPOB-SYNC',
-      product: 'Isi Ulang Saldo Terverifikasi',
-      custId: q,
-      custName: 'Pelanggan Terdaftar Hesolvian',
-      tarif: 'Standar Non-Subsidi',
-      refCode: `REF-${Math.floor(1000000 + Math.random() * 9000000)}`,
-      priceBase: 50000,
-      adminFee: 1500,
-      discount: 0,
-      total: 51500,
-      method: 'QRIS Instant Settlement',
-      reconcileId: `#RC-${Math.floor(1000 + Math.random() * 9000)}-X`,
-      hashToken: `sha256:${Math.random().toString(36).substring(2)}${Math.random().toString(36).substring(2)}`,
-      billerName: 'Mitra Switching Nasional'
-    };
+    // Tidak ada di memori: ambil dari pesanan asli di Supabase lewat server action.
+    try {
+      const result = await lookupTransactionAction(q);
+      if (!result.ok) {
+        showToast(result.message || 'Gagal mencari transaksi.');
+        return;
+      }
+      if (result.records.length === 0) {
+        showToast(`Transaksi "${q}" tidak ditemukan.`);
+        return;
+      }
 
-    setTransactions((prev) => ({
-      ...prev,
-      [newId]: simulatedRecord
-    }));
-    setCurrentTrxId(newId);
-    showToast('Data transaksi berhasil diverifikasi dari gateway!');
+      setTransactions((prev) => {
+        const next = { ...prev };
+        for (const record of result.records) next[record.id] = record;
+        return next;
+      });
+      setCurrentTrxId(result.records[0].id);
+      setSearchQuery(result.records[0].id);
+      showToast(
+        result.records.length > 1
+          ? `${result.records.length} transaksi ditemukan — menampilkan yang terbaru.`
+          : 'Transaksi ditemukan dan sinkron dengan server.'
+      );
+    } catch {
+      showToast('Gagal menghubungi server. Coba lagi sebentar.');
+    }
   };
 
   const handlePasteClipboard = async () => {
@@ -241,6 +240,8 @@ export default function App({ publicData = null, payments = null }: AppProps) {
       ...prev,
       [currentTrx.id]: updatedTrx
     }));
+    // Sinkronkan status ke pesanan asli di Supabase (abaikan kegagalan diam-diam).
+    void setPublicTransactionStatusAction(currentTrx.id, 'processing').catch(() => {});
   };
 
   const handleSyncMutasi = () => {
@@ -292,6 +293,8 @@ export default function App({ publicData = null, payments = null }: AppProps) {
         ...prev,
         [currentTrx.id]: updatedTrx
       }));
+      // Tandai selesai di pesanan asli Supabase juga.
+      void setPublicTransactionStatusAction(currentTrx.id, 'success').catch(() => {});
       showToast('Status mutasi berhasil disinkronkan ke server provider!');
     } else {
       showToast('Status transaksi sudah terkonfirmasi selesai.');
@@ -305,6 +308,16 @@ export default function App({ publicData = null, payments = null }: AppProps) {
     }));
     setCurrentTrxId(newTrx.id);
     setSearchQuery(newTrx.id);
+
+    // Simpan ke Supabase supaya jadi pesanan asli: bisa dilacak lagi kapan saja
+    // dan langsung muncul di menu Manajemen Pesanan admin.
+    void savePublicTransactionAction(newTrx)
+      .then((result) => {
+        if (!result.ok) {
+          showToast(result.message || 'Transaksi tersimpan di perangkat, gagal sinkron ke server.');
+        }
+      })
+      .catch(() => {});
   };
 
   /**
