@@ -66,6 +66,10 @@ export interface TransactionRow {
   discount: number;
   total: number;
   method: string;
+  /** Token / SN / nomor referensi yang terbit setelah transaksi sukses. */
+  token_code: string;
+  token_label: string;
+  token_sub: string;
   created_at: string;
   updated_at: string;
 }

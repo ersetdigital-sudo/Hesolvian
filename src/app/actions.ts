@@ -70,14 +70,24 @@ export async function savePublicTransactionAction(record: TransactionRecord): Pr
   return { ok: true };
 }
 
+export interface PublicTokenPayload {
+  label: string;
+  code: string;
+  sub: string;
+}
+
 /**
  * Ubah status pesanan dari sisi pelanggan.
  * Sengaja hanya mengizinkan transisi "processing" (konfirmasi bayar) dan
  * "success" (penyelesaian provider) — bukan sembarang nilai.
+ *
+ * Saat menjadi `success`, token/SN yang diterbitkan ikut disimpan supaya tetap
+ * tampil setelah halaman di-refresh.
  */
 export async function setPublicTransactionStatusAction(
   id: string,
-  status: 'processing' | 'success'
+  status: 'processing' | 'success',
+  token?: PublicTokenPayload
 ): Promise<PublicWriteResult> {
   const trxId = typeof id === 'string' ? id.trim() : '';
   if (!trxId) return { ok: false, message: 'ID transaksi kosong.' };
@@ -85,8 +95,27 @@ export async function setPublicTransactionStatusAction(
     return { ok: false, message: 'Status tidak dikenal.' };
   }
 
+  const base: Record<string, string> = { status };
+  const code = typeof token?.code === 'string' ? token.code.trim().slice(0, 64) : '';
+  const withToken: Record<string, string> = code
+    ? {
+        ...base,
+        token_code: code,
+        token_label: (token?.label ?? '').trim().slice(0, 80),
+        token_sub: (token?.sub ?? '').trim().slice(0, 200)
+      }
+    : base;
+
   try {
-    const { error } = await supabaseAdmin().from('transactions').update({ status }).eq('id', trxId);
+    let { error } = await supabaseAdmin().from('transactions').update(withToken).eq('id', trxId);
+
+    // Migrasi kolom token (0006) belum diterapkan: status tetap disimpan,
+    // penyimpanan token dilewati supaya pelanggan tidak terkunci di "diproses".
+    if (error && withToken !== base) {
+      const fallback = await supabaseAdmin().from('transactions').update(base).eq('id', trxId);
+      error = fallback.error;
+    }
+
     if (error) return { ok: false, message: describeDbError(error) };
   } catch (error) {
     return { ok: false, message: describeDbError(error) };

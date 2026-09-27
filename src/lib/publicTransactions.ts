@@ -115,6 +115,10 @@ export function toPublicRecord(row: TransactionRow): TransactionRecord {
   const updatedTime = clock(updated);
   const categoryName = categoryMeta(row.category_id).name;
 
+  const tokenCode = cleanText(row.token_code, 64);
+  const tokenLabel = cleanText(row.token_label, 80);
+  const tokenSub = cleanText(row.token_sub, 200);
+
   return {
     id: row.id,
     status,
@@ -128,7 +132,10 @@ export function toPublicRecord(row: TransactionRow): TransactionRecord {
     stepActive: meta.activeStep,
     stepProgressText: meta.progress,
     steps: buildSteps(status, meta.activeStep, createdTime, updatedTime),
-    hasCopyToken: false,
+    tokenLabel: tokenCode ? tokenLabel || undefined : undefined,
+    tokenCode: tokenCode || undefined,
+    tokenSub: tokenCode ? tokenSub || undefined : undefined,
+    hasCopyToken: /20\s*digit/i.test(tokenLabel),
     category: categoryName,
     categoryCode: row.category_id.toUpperCase(),
     product: row.product_label || categoryName,
@@ -166,7 +173,7 @@ export function toDbPayload(record: Partial<TransactionRecord> | null) {
     ? (record!.status as TransactionStatus)
     : 'pending';
 
-  return {
+  const payload: Record<string, string | number> = {
     id: cleanText(record?.id, 40),
     customer_id: cleanText(record?.custId, 40),
     category_id: cleanText(record?.categoryCode, 24).toLowerCase() || 'pulsa',
@@ -179,4 +186,15 @@ export function toDbPayload(record: Partial<TransactionRecord> | null) {
     total: clampInt(record?.total),
     method: cleanText(record?.method, 60, 'QRIS')
   };
+
+  // Token hanya ditulis kalau memang ada; kalau tidak, kolomnya dibiarkan
+  // apa adanya supaya menyimpan ulang pesanan lama tidak menghapus token.
+  const tokenCode = cleanText(record?.tokenCode, 64);
+  if (tokenCode) {
+    payload.token_code = tokenCode;
+    payload.token_label = cleanText(record?.tokenLabel, 80);
+    payload.token_sub = cleanText(record?.tokenSub, 200);
+  }
+
+  return payload;
 }

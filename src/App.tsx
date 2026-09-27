@@ -293,8 +293,12 @@ export default function App({ publicData = null, payments = null }: AppProps) {
         ...prev,
         [currentTrx.id]: updatedTrx
       }));
-      // Tandai selesai di pesanan asli Supabase juga.
-      void setPublicTransactionStatusAction(currentTrx.id, 'success').catch(() => {});
+      // Tandai selesai + simpan token yang baru diterbitkan ke pesanan asli Supabase.
+      void setPublicTransactionStatusAction(currentTrx.id, 'success', {
+        label: tokenLabel,
+        code: tokenCode,
+        sub: tokenSub
+      }).catch(() => {});
       showToast('Status mutasi berhasil disinkronkan ke server provider!');
     } else {
       showToast('Status transaksi sudah terkonfirmasi selesai.');
