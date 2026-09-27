@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import AdminForm from '@/components/admin/AdminForm';
-import ImageUpload from '@/components/admin/ImageUpload';
 import { Checkbox, Field, Select, TextArea, TextInput } from '@/components/admin/ui';
 import { saveProductAction } from '@/app/admin/(panel)/actions';
 import { CATEGORY_ORDER, categoryMeta } from '@/lib/categories';
@@ -121,17 +120,6 @@ export default function ProductForm({ product }: { product?: ProductRow }) {
         </Field>
       </div>
 
-      <ImageUpload
-        urlField="image_url"
-        publicIdField="image_public_id"
-        initialUrl={product?.image_url}
-        initialPublicId={product?.image_public_id}
-        folder="produk"
-        label="Gambar produk"
-        ratio="square"
-        previewWidth={400}
-        hint="Opsional. Tampil di katalog & kartu Flash Sale, sudah otomatis dikompres Cloudinary."
-      />
     </AdminForm>
   );
 }

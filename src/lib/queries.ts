@@ -292,7 +292,7 @@ export async function getPublicData(): Promise<PublicData> {
   const [productsResult, flashResult, faqResult] = await Promise.all([
     client
       .from('products')
-      .select('category_id, group_name, label, description, price, is_variable, image_url, sort_order')
+      .select('category_id, group_name, label, description, price, is_variable, sort_order')
       .eq('status', 'active')
       .order('category_id')
       .order('sort_order'),
@@ -329,8 +329,7 @@ export async function getPublicData(): Promise<PublicData> {
       l: row.label as string,
       d: row.description as string,
       p: row.price as number,
-      variable: (row.is_variable as boolean) || undefined,
-      imageUrl: (row.image_url as string) ?? null
+      variable: (row.is_variable as boolean) || undefined
     });
   }
 
@@ -351,8 +350,7 @@ export async function getPublicData(): Promise<PublicData> {
     quota: row.quota as number,
     sold: row.sold as number,
     categoryId: row.category_id as string,
-    targetLabel: (row.target_label as string | null) ?? undefined,
-    imageUrl: (row.image_url as string) ?? null
+    targetLabel: (row.target_label as string | null) ?? undefined
   }));
 
   /* --- FAQ pusat bantuan --- */

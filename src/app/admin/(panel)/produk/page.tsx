@@ -132,24 +132,16 @@ export default async function ProductsPage({
                     <tr key={row.id} className="border-b border-[#f7f6f4] last:border-0 hover:bg-[#fafaf9]">
                       <td className="px-5 py-3.5 sm:px-6">
                         <div className="flex items-center gap-3">
-                          {row.image_url ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                              src={row.image_url}
-                              alt=""
-                              loading="lazy"
-                              className="h-10 w-10 shrink-0 rounded-lg border border-[#f0efed] bg-[#f5f5f4] object-cover"
-                            />
-                          ) : (
-                            <span
-                              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
-                              style={{ backgroundColor: meta.bg }}
-                            >
-                              <span className="material-symbols-outlined text-[19px]" style={{ color: meta.color }}>
-                                {meta.icon}
-                              </span>
+                          {/* Ikon kategori, bukan gambar: produk tidak lagi punya gambar
+                              (field unggahnya sudah dibuang dari form produk). */}
+                          <span
+                            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                            style={{ backgroundColor: meta.bg }}
+                          >
+                            <span className="material-symbols-outlined text-[19px]" style={{ color: meta.color }}>
+                              {meta.icon}
                             </span>
-                          )}
+                          </span>
                           <div className="min-w-0">
                             <p className="truncate text-[13px] font-semibold text-[#1d1c18]">{row.label}</p>
                             <p className="truncate text-[11.5px] text-[#a8a29e]">{row.description}</p>

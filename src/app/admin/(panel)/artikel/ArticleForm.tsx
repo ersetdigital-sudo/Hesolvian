@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import AdminForm from '@/components/admin/AdminForm';
-import ImageUpload from '@/components/admin/ImageUpload';
 import { Field, Select, TextArea, TextInput } from '@/components/admin/ui';
 import { saveArticleAction } from '@/app/admin/(panel)/actions';
 import type { ArticleRow } from '@/lib/types';
@@ -99,17 +98,6 @@ export default function ArticleForm({ article }: { article?: ArticleRow }) {
         </div>
       </div>
 
-      <ImageUpload
-        urlField="cover_image_url"
-        publicIdField="cover_image_public_id"
-        initialUrl={article?.cover_image_url}
-        initialPublicId={article?.cover_image_public_id}
-        folder="artikel"
-        label="Gambar sampul"
-        ratio="wide"
-        previewWidth={900}
-        hint="Rasio 16:10 paling pas. Format JPG/PNG/WEBP, maksimal 2 MB."
-      />
     </AdminForm>
   );
 }

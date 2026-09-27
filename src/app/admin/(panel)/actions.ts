@@ -46,13 +46,6 @@ function revalidateEverything() {
   revalidatePath('/admin');
 }
 
-/** Kalau gambar diganti, aset lama ikut dibuang dari Cloudinary. */
-async function syncImageAsset(previousPublicId: string | null) {
-  if (previousPublicId) {
-    await destroyCloudinaryAsset(previousPublicId).catch(() => ({ ok: false }));
-  }
-}
-
 /* ============================================================
  * PRODUK
  * ============================================================ */
@@ -78,9 +71,10 @@ export async function saveProductAction(
   const isVariable = text(formData, 'is_variable') === 'on';
   const price = isVariable ? 0 : int(formData, 'price');
   const promoPrice = optionalInt(formData, 'promo_price');
-  const imagePublicId = optionalText(formData, 'image_public_id');
-  const imageUrl = optionalText(formData, 'image_url');
 
+  // Gambar produk sengaja tidak diatur dari panel: field unggahnya sudah dibuang
+  // dan tidak ada komponen publik yang menampilkan gambar produk. Kolom
+  // `image_url` / `image_public_id` dibiarkan di database dan tidak ikut di-update.
   const payload = {
     category_id: categoryId,
     group_name: groupName,
@@ -89,21 +83,12 @@ export async function saveProductAction(
     price,
     promo_price: promoPrice,
     is_variable: isVariable,
-    image_url: imageUrl,
-    image_public_id: imagePublicId,
     status: (text(formData, 'status', 'active') as ContentStatus) || 'active',
     sort_order: int(formData, 'sort_order')
   };
 
   try {
     if (id) {
-      const { data: previous } = await supabaseAdmin()
-        .from('products')
-        .select('image_public_id')
-        .eq('id', id)
-        .maybeSingle();
-      await syncImageAsset((previous?.image_public_id as string | null) ?? null);
-
       const { error } = await supabaseAdmin().from('products').update(payload).eq('id', id);
       if (error) return { ok: false, message: describeDbError(error) };
     } else {
@@ -159,6 +144,9 @@ export async function saveFlashSaleAction(
   if (!name) return { ok: false, message: 'Nama produk promo wajib diisi.' };
   if (!categoryId) return { ok: false, message: 'Kategori wajib dipilih.' };
 
+  // Gambar promo tidak diatur dari panel: field unggahnya sudah dibuang dan tidak
+  // ada komponen publik yang menampilkan gambar Flash Sale. Kolom `image_url` /
+  // `image_public_id` dibiarkan di database dan tidak ikut di-update.
   const payload = {
     name,
     provider: text(formData, 'provider'),
@@ -172,21 +160,12 @@ export async function saveFlashSaleAction(
     session_id: text(formData, 'session_id', 'flash-11'),
     session_start: text(formData, 'session_start', '11:00'),
     session_end: text(formData, 'session_end', '13:00'),
-    image_url: optionalText(formData, 'image_url'),
-    image_public_id: optionalText(formData, 'image_public_id'),
     status: (text(formData, 'status', 'active') as ContentStatus) || 'active',
     sort_order: int(formData, 'sort_order')
   };
 
   try {
     if (id) {
-      const { data: previous } = await supabaseAdmin()
-        .from('flash_sales')
-        .select('image_public_id')
-        .eq('id', id)
-        .maybeSingle();
-      await syncImageAsset((previous?.image_public_id as string | null) ?? null);
-
       const { error } = await supabaseAdmin().from('flash_sales').update(payload).eq('id', id);
       if (error) return { ok: false, message: describeDbError(error) };
     } else {
@@ -254,13 +233,14 @@ export async function saveArticleAction(
 
   const status = (text(formData, 'status', 'draft') as 'draft' | 'published' | 'archived') || 'draft';
 
+  // Gambar sampul tidak diatur dari panel: field unggahnya sudah dibuang dan
+  // artikel tidak punya halaman publik yang menampilkan sampulnya. Kolom
+  // `cover_image_url` / `cover_image_public_id` dibiarkan dan tidak ikut di-update.
   const payload = {
     title,
     slug: text(formData, 'slug') || slugify(title),
     excerpt: text(formData, 'excerpt'),
     content: text(formData, 'content'),
-    cover_image_url: optionalText(formData, 'cover_image_url'),
-    cover_image_public_id: optionalText(formData, 'cover_image_public_id'),
     author: text(formData, 'author', 'Admin'),
     status,
     published_at: status === 'published' ? new Date().toISOString() : null
@@ -268,13 +248,6 @@ export async function saveArticleAction(
 
   try {
     if (id) {
-      const { data: previous } = await supabaseAdmin()
-        .from('articles')
-        .select('cover_image_public_id')
-        .eq('id', id)
-        .maybeSingle();
-      await syncImageAsset((previous?.cover_image_public_id as string | null) ?? null);
-
       const { error } = await supabaseAdmin()
         .from('articles')
         .update({ ...payload, published_at: status === 'published' ? undefined : null })

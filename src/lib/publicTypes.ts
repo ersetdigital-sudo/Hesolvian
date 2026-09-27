@@ -9,7 +9,6 @@ export interface PublicCatalogItem {
   d: string;
   p: number;
   variable?: boolean;
-  imageUrl?: string | null;
 }
 
 export interface PublicCatalogGroup {
@@ -34,7 +33,6 @@ export interface PublicFlashSaleItem {
   sold: number;
   categoryId: string;
   targetLabel?: string;
-  imageUrl?: string | null;
 }
 
 export interface PublicFaq {

@@ -1,7 +1,6 @@
 'use client';
 
 import AdminForm from '@/components/admin/AdminForm';
-import ImageUpload from '@/components/admin/ImageUpload';
 import { Alert, Field, Select, TextInput } from '@/components/admin/ui';
 import { saveFlashSaleAction } from '@/app/admin/(panel)/actions';
 import { CATEGORY_ORDER, categoryMeta } from '@/lib/categories';
@@ -163,17 +162,6 @@ export default function FlashSaleForm({
         satu huruf, otomatisasi pilihan nominal akan gagal dan modal langsung terbuka tanpa preselect.
       </Alert>
 
-      <ImageUpload
-        urlField="image_url"
-        publicIdField="image_public_id"
-        initialUrl={row?.image_url}
-        initialPublicId={row?.image_public_id}
-        folder="flash-sale"
-        label="Gambar produk promo"
-        ratio="square"
-        previewWidth={400}
-        hint="Opsional. Gambar akan dikompres otomatis oleh Cloudinary sebelum ditampilkan."
-      />
     </AdminForm>
   );
 }
