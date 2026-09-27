@@ -232,7 +232,6 @@ export async function getPaymentSettings(): Promise<PaymentSettings> {
       ...stored.transfer,
       accounts: stored.transfer?.accounts ?? []
     },
-    va: { ...DEFAULT_PAYMENT_SETTINGS.va, ...stored.va },
     tunai: { ...DEFAULT_PAYMENT_SETTINGS.tunai, ...stored.tunai }
   };
 }

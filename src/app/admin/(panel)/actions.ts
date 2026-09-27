@@ -443,10 +443,6 @@ export async function savePaymentSettingsAction(
       enabled: text(formData, 'transfer_enabled') === 'on',
       accounts: parseBankAccounts(formData)
     },
-    va: {
-      enabled: text(formData, 'va_enabled') === 'on',
-      note: text(formData, 'va_note')
-    },
     tunai: {
       enabled: text(formData, 'tunai_enabled') === 'on',
       note: text(formData, 'tunai_note')

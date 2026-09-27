@@ -15,7 +15,7 @@ import type { PaymentSettings } from '@/lib/types';
  * hidden input yang ikut ter-submit bersama formulir ini.
  */
 export default function PaymentSettingsForm({ settings }: { settings: PaymentSettings }) {
-  const { qris, transfer, va, tunai } = settings;
+  const { qris, transfer, tunai } = settings;
 
   return (
     <AdminForm
@@ -70,27 +70,6 @@ export default function PaymentSettingsForm({ settings }: { settings: PaymentSet
         </div>
 
         <BankAccountsEditor initialAccounts={transfer.accounts} />
-      </section>
-
-      {/* ---------- Virtual Account ---------- */}
-      <section className="rounded-xl border border-[#f0efed] p-5">
-        <SectionHeading
-          title="Virtual Account"
-          subtitle="Instruksi singkat yang tampil setelah pelanggan memilih Virtual Account."
-        />
-
-        <div className="mb-5">
-          <Checkbox name="va_enabled" label="Aktifkan Virtual Account" defaultChecked={va.enabled} />
-        </div>
-
-        <Field label="Catatan / instruksi" htmlFor="va_note" optional>
-          <TextArea
-            id="va_note"
-            name="va_note"
-            defaultValue={va.note}
-            placeholder="Nomor Virtual Account dibuat otomatis saat pesanan dikonfirmasi."
-          />
-        </Field>
       </section>
 
       {/* ---------- Tunai ---------- */}

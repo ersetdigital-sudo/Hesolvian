@@ -7,7 +7,7 @@ import { createTransactionAction } from '@/app/admin/(panel)/actions';
 import { CATEGORY_ORDER, categoryMeta } from '@/lib/categories';
 import { formatNumber, formatRupiah } from '@/lib/format';
 
-const METHODS = ['QRIS', 'Transfer Bank', 'Virtual Account', 'Tunai Agen'];
+const METHODS = ['QRIS', 'Transfer Bank', 'Tunai Agen'];
 const STATUSES = [
   { value: 'success', label: 'Berhasil' },
   { value: 'pending', label: 'Menunggu' },

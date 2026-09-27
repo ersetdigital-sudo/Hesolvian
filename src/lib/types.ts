@@ -115,7 +115,7 @@ export interface TransferSettings {
   accounts: BankAccount[];
 }
 
-/** Metode tanpa konfigurasi tambahan (Virtual Account / agen tunai). */
+/** Metode tanpa konfigurasi tambahan, mis. agen tunai. */
 export interface NoteSettings {
   enabled: boolean;
   note: string;
@@ -129,7 +129,6 @@ export interface NoteSettings {
 export interface PaymentSettings {
   qris: QrisSettings;
   transfer: TransferSettings;
-  va: NoteSettings;
   tunai: NoteSettings;
 }
 
@@ -141,7 +140,6 @@ export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
     imagePublicId: null
   },
   transfer: { enabled: true, accounts: [] },
-  va: { enabled: true, note: '' },
   tunai: { enabled: true, note: '' }
 };
 

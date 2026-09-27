@@ -164,7 +164,7 @@ CATEGORIES_DATA.forEach((c) =>
 );
 const variableItems = allItems.filter((i) => i.price === 0);
 const fixedItems = allItems.filter((i) => i.price > 0);
-const methods = ['QRIS', 'Transfer Bank', 'Virtual Account', 'Tunai Agen'];
+const methods = ['QRIS', 'Transfer Bank', 'Tunai Agen'];
 const TOTAL_MONTHS = 24;
 
 let rs = 20260101;

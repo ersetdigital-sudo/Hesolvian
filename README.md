@@ -53,7 +53,7 @@ src/app/admin/
     pusat-bantuan/       CRUD FAQ yang tampil di halaman publik /bantuan
     transaksi/           Ledger, filter, entri manual, ekspor CSV
     pembayaran/          Metode Pembayaran: QRIS (gambar diunggah ke Cloudinary),
-                         transfer bank, Virtual Account, tunai + toggle aktif
+                         transfer bank, tunai + toggle aktif
     sistem/              Pengaturan nama situs + kontak
     [section]/           Halaman penampung untuk menu yang belum dibangun
 src/app/api/

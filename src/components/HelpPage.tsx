@@ -173,7 +173,7 @@ export const HelpPage: React.FC<HelpPageProps> = ({
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-2.5 bg-[#FBF6EF] rounded-xl">
-                    <span className="text-[#6B5A53]">Kliring Bank QRIS &amp; Virtual Account</span>
+                    <span className="text-[#6B5A53]">Kliring Bank QRIS &amp; Transfer Bank</span>
                     <span className="font-bold text-[#1F7A54] flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1F7A54]" /> Terhubung
                     </span>
