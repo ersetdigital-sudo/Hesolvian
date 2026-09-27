@@ -1,6 +1,7 @@
 import App from '../App';
-import { getPublicData } from '@/lib/queries';
+import { getPaymentSettings, getPublicData } from '@/lib/queries';
 import type { PublicData } from '@/lib/publicTypes';
+import { DEFAULT_PAYMENT_SETTINGS, type PaymentSettings } from '@/lib/types';
 
 /**
  * Data katalog & Flash Sale diambil di server (service_role) supaya:
@@ -13,6 +14,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Page() {
   let publicData: PublicData | null = null;
+  let payments: PaymentSettings = DEFAULT_PAYMENT_SETTINGS;
 
   try {
     publicData = await getPublicData();
@@ -21,5 +23,12 @@ export default async function Page() {
     publicData = null;
   }
 
-  return <App publicData={publicData} />;
+  // Metode pembayaran ditampilkan di kartu pembayaran; kalau gagal, pakai default.
+  try {
+    payments = await getPaymentSettings();
+  } catch (error) {
+    console.error('[public] Gagal memuat metode pembayaran, memakai nilai default:', error);
+  }
+
+  return <App publicData={publicData} payments={payments} />;
 }

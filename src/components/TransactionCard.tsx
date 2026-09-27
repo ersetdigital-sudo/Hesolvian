@@ -3,9 +3,12 @@ import { TransactionRecord, formatRupiah } from '../types/ppob';
 import { QrisPaymentCard } from './QrisPaymentCard';
 import { downloadReceiptImage, printReceipt } from '../utils/receiptDownloader';
 import { buildDynamicTimeline } from '../utils/timelineHelper';
+import type { PaymentSettings } from '../lib/types';
 
 interface TransactionCardProps {
   data: TransactionRecord;
+  /** Konfigurasi metode pembayaran dari /admin/pembayaran (QRIS dsb). */
+  payments?: PaymentSettings | null;
   onCopyToken: () => void;
   onPrint: () => void;
   onShare: () => void;
@@ -17,6 +20,7 @@ interface TransactionCardProps {
 
 export const TransactionCard: React.FC<TransactionCardProps> = ({
   data,
+  payments = null,
   onCopyToken,
   onPrint,
   onShare,
@@ -257,13 +261,25 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
           {/* MIDDLE HERO AREA (PENDING / PROCESSING / TOKEN SUCCESS) */}
           {/* ======================================================== */}
           {/* Case 1: Status is Pending -> Show authentic QRIS payment box with countdown & QR code */}
-          {data.status === 'pending' && (
-            <QrisPaymentCard
-              data={data}
-              onPaymentSuccess={onPaymentSuccess}
-              showToast={showToast}
-            />
-          )}
+          {data.status === 'pending' &&
+            (payments && !payments.qris.enabled ? (
+              <div className="space-y-1.5 rounded-2xl border-2 border-[#E8DDD2] bg-[#FBF6EF] p-6 text-center">
+                <span className="material-symbols-outlined text-[30px] text-[#B4432C]">qr_code_2</span>
+                <p className="text-[14px] font-bold text-[#2C211D]">
+                  Pembayaran QRIS sedang dinonaktifkan
+                </p>
+                <p className="text-[12.5px] text-[#6B5A53]">
+                  Hubungi admin loket atau gunakan metode pembayaran lain yang tersedia.
+                </p>
+              </div>
+            ) : (
+              <QrisPaymentCard
+                data={data}
+                payments={payments}
+                onPaymentSuccess={onPaymentSuccess}
+                showToast={showToast}
+              />
+            ))}
 
           {/* Case 2: Status is Processing -> Show active biller switching queue banner with resync button */}
           {data.status === 'processing' && (

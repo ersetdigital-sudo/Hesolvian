@@ -102,6 +102,65 @@ export interface ContactSettings {
   address: string;
 }
 
+/* ---------- Metode pembayaran ---------- */
+
+/** Rekening bank tujuan transfer manual, diurutkan sesuai urutan input. */
+export interface BankAccount {
+  id: string;
+  bank: string;
+  accountNumber: string;
+  accountName: string;
+}
+
+/** QRIS yang ditampilkan di kartu pembayaran publik. */
+export interface QrisSettings {
+  enabled: boolean;
+  merchantName: string;
+  nmid: string;
+  /** URL gambar QRIS (transformasi Cloudinary) — null = pakai QR contoh. */
+  imageUrl: string | null;
+  /** public_id Cloudinary, dipakai untuk menghapus aset lama. */
+  imagePublicId: string | null;
+}
+
+/** Transfer bank manual: aktif/nonaktif + daftar rekening. */
+export interface TransferSettings {
+  enabled: boolean;
+  accounts: BankAccount[];
+}
+
+/** Metode tanpa konfigurasi tambahan (Virtual Account / agen tunai). */
+export interface NoteSettings {
+  enabled: boolean;
+  note: string;
+}
+
+/**
+ * Konfigurasi metode pembayaran yang diatur di /admin/pembayaran dan
+ * ditampilkan di halaman publik. Disimpan sebagai satu key `payments` di tabel
+ * `site_settings`.
+ */
+export interface PaymentSettings {
+  qris: QrisSettings;
+  transfer: TransferSettings;
+  va: NoteSettings;
+  tunai: NoteSettings;
+}
+
+/** Dipakai saat database belum punya key `payments` atau query gagal. */
+export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
+  qris: {
+    enabled: true,
+    merchantName: 'Hesolvian Payment / PT Hesolvian Nusantara',
+    nmid: 'ID1020039281920',
+    imageUrl: null,
+    imagePublicId: null
+  },
+  transfer: { enabled: true, accounts: [] },
+  va: { enabled: true, note: '' },
+  tunai: { enabled: true, note: '' }
+};
+
 /* ---------- Dasbor ---------- */
 
 export interface DashboardTotals {

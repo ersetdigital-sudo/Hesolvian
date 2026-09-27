@@ -22,13 +22,16 @@ import { TermsPage } from './components/TermsPage';
 import { PrivacyPage } from './components/PrivacyPage';
 import { resolvePublicData } from './lib/publicCatalog';
 import type { PublicData } from './lib/publicTypes';
+import type { PaymentSettings } from './lib/types';
 
 interface AppProps {
   /** Katalog + Flash Sale dari Supabase. `null` = pakai data statis. */
   publicData?: PublicData | null;
+  /** Metode pembayaran (QRIS dsb) dari pengaturan admin. */
+  payments?: PaymentSettings | null;
 }
 
-export default function App({ publicData = null }: AppProps) {
+export default function App({ publicData = null, payments = null }: AppProps) {
   // Di-memo supaya identitasnya stabil antar render (aman untuk dependency array).
   const { categories, flashSales, faqs } = useMemo(() => resolvePublicData(publicData), [publicData]);
   const [transactions, setTransactions] = useState<Record<string, TransactionRecord>>({});
@@ -406,6 +409,7 @@ export default function App({ publicData = null }: AppProps) {
             {currentTrx ? (
               <TransactionCard
                 data={currentTrx}
+                payments={payments}
                 onCopyToken={handleCopyToken}
                 onPrint={() => setIsReceiptModalOpen(true)}
                 onShare={handleShare}
@@ -445,6 +449,7 @@ export default function App({ publicData = null }: AppProps) {
         initialItemLabel={selectedItemLabel}
         initialGroup={selectedGroup}
         categories={categories}
+        payments={payments}
         onTransactionCreated={handleTransactionCreated}
         onGoToTracker={(trxId) => {
           setActiveTab('cek-transaksi');

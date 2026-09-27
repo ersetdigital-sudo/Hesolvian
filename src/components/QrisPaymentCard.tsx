@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { TransactionRecord, formatRupiah } from '../types/ppob';
 import { downloadQrisStandImage } from '../utils/receiptDownloader';
+import type { PaymentSettings } from '../lib/types';
 
 interface QrisPaymentCardProps {
   data: TransactionRecord;
+  /** Konfigurasi QRIS dari /admin/pembayaran (gambar, nama merchant, NMID). */
+  payments?: PaymentSettings | null;
   onPaymentSuccess: () => void;
   showToast: (msg: string) => void;
 }
 
 export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
   data,
+  payments = null,
   onPaymentSuccess,
   showToast
 }) => {
@@ -53,7 +57,11 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
   };
 
   const merchantName =
-    data.qrisData?.merchantName || 'Hesolvian Payment / PT Hesolvian Nusantara';
+    payments?.qris.merchantName ||
+    data.qrisData?.merchantName ||
+    'Hesolvian Payment / PT Hesolvian Nusantara';
+
+  const nmid = payments?.qris.nmid || data.qrisData?.nmid || 'ID1020039281920';
 
   return (
     <div className="bg-white rounded-2xl sm:rounded-3xl border-2 border-[#fe7e5d]/40 shadow-sm overflow-hidden p-4 sm:p-7">
@@ -106,7 +114,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
             </div>
 
             <div className="text-[10px] text-[#8a716c] font-mono mt-0.5 mb-2.5">
-              NMID: {data.qrisData?.nmid || 'ID1020039281920'}
+              NMID: {nmid}
             </div>
 
             {/* Generated High-Fidelity SVG QR Matrix */}
@@ -115,6 +123,15 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
               title="Klik untuk mengunduh kode QRIS"
               className="p-3 bg-white border border-[#ece7e1] rounded-xl shadow-inner relative group cursor-pointer w-full flex items-center justify-center"
             >
+              {payments?.qris.imageUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={payments.qris.imageUrl}
+                  alt={`Kode QRIS ${merchantName}`}
+                  loading="lazy"
+                  className="w-48 h-48 sm:w-52 sm:h-52 rounded-lg bg-white object-contain"
+                />
+              ) : (
               <svg
                 viewBox="0 0 160 160"
                 className="w-48 h-48 sm:w-52 sm:h-52"
@@ -188,6 +205,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
                   GPN
                 </text>
               </svg>
+              )}
 
               {/* Hover Overlay */}
               <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[12px] font-semibold gap-1.5">
@@ -246,7 +264,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
               </li>
               <li>Pilih menu <strong>Scan / Bayar QRIS</strong> dan arahkan kamera ke kode QR.</li>
               <li>
-                Pastikan nama merchant adalah <strong>HESOLVIAN PAYMENT</strong> dan nominal tepat <strong>{formatRupiah(data.total)}</strong>.
+                Pastikan nama merchant adalah <strong>{merchantName}</strong> dan nominal tepat <strong>{formatRupiah(data.total)}</strong>.
               </li>
               <li>Masukkan PIN transaksi Anda. Mutasi akan terdeteksi otomatis dalam 5-15 detik.</li>
             </ol>

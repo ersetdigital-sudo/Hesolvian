@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/adminAuth';
 import { destroyCloudinaryAsset } from '@/lib/cloudinary';
 import { describeDbError, supabaseAdmin } from '@/lib/supabase';
-import type { ActionState, ContentStatus, TransactionStatus } from '@/lib/types';
+import type { ActionState, BankAccount, ContentStatus, PaymentSettings, TransactionStatus } from '@/lib/types';
+import { DEFAULT_PAYMENT_SETTINGS } from '@/lib/types';
 
 /**
  * Semua mutasi panel admin.
@@ -494,6 +495,95 @@ export async function saveSettingsAction(
 
   revalidateEverything();
   return { ok: true, message: 'Pengaturan situs disimpan.' };
+}
+
+/* ============================================================
+ * METODE PEMBAYARAN
+ * ============================================================ */
+
+/**
+ * Baca daftar rekening dari hidden input JSON yang diisi `BankAccountsEditor`.
+ * Baris yang masih kosong dibuang supaya tidak tersimpan sebagai sampah.
+ */
+function parseBankAccounts(formData: FormData): BankAccount[] {
+  const raw = text(formData, 'banks_json');
+  if (!raw) return [];
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .map((entry, index) => {
+      const row = (entry ?? {}) as Record<string, unknown>;
+      return {
+        id: typeof row.id === 'string' && row.id ? row.id : `bank-${index + 1}`,
+        bank: typeof row.bank === 'string' ? row.bank.trim() : '',
+        accountNumber: typeof row.accountNumber === 'string' ? row.accountNumber.trim() : '',
+        accountName: typeof row.accountName === 'string' ? row.accountName.trim() : ''
+      };
+    })
+    .filter((row) => row.bank || row.accountNumber || row.accountName);
+}
+
+/**
+ * Simpan konfigurasi metode pembayaran.
+ *
+ * Gambar QRIS ditangani `ImageUpload` (upload langsung ke Cloudinary + hapus
+ * aset lama lewat /api/cloudinary/delete), jadi di sini cukup menyimpan URL dan
+ * public_id hasilnya. Aset sengaja TIDAK dihapus lagi dari server supaya gambar
+ * yang tidak diganti tidak ikut terbuang.
+ */
+export async function savePaymentSettingsAction(
+  _prevState: ActionState | null,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    await requireAdmin();
+  } catch {
+    return { ok: false, message: 'Sesi admin habis. Silakan login ulang.' };
+  }
+
+  const settings: PaymentSettings = {
+    qris: {
+      enabled: text(formData, 'qris_enabled') === 'on',
+      merchantName: text(formData, 'qris_merchant_name', DEFAULT_PAYMENT_SETTINGS.qris.merchantName),
+      nmid: text(formData, 'qris_nmid'),
+      imageUrl: optionalText(formData, 'qris_image_url'),
+      imagePublicId: optionalText(formData, 'qris_image_public_id')
+    },
+    transfer: {
+      enabled: text(formData, 'transfer_enabled') === 'on',
+      accounts: parseBankAccounts(formData)
+    },
+    va: {
+      enabled: text(formData, 'va_enabled') === 'on',
+      note: text(formData, 'va_note')
+    },
+    tunai: {
+      enabled: text(formData, 'tunai_enabled') === 'on',
+      note: text(formData, 'tunai_note')
+    }
+  };
+
+  try {
+    const { error } = await supabaseAdmin()
+      .from('site_settings')
+      .upsert(
+        { key: 'payments', value: settings, updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      );
+    if (error) return { ok: false, message: describeDbError(error) };
+  } catch (error) {
+    return { ok: false, message: describeDbError(error) };
+  }
+
+  revalidateEverything();
+  return { ok: true, message: 'Metode pembayaran disimpan.' };
 }
 
 /** Hapus FAQ melalui tombol yang butuh id dari FormData. */

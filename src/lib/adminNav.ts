@@ -56,6 +56,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     title: 'Pengaturan',
     items: [
       { label: 'Pusat Bantuan', href: '/admin/pusat-bantuan', icon: 'help', crumb: 'Dokumentasi', ready: true },
+      { label: 'Metode Pembayaran', href: '/admin/pembayaran', icon: 'payments', crumb: 'QRIS & Kanal Bayar', ready: true },
       { label: 'Pengaturan Sistem', href: '/admin/sistem', icon: 'settings', crumb: 'Konfigurasi', ready: true }
     ]
   }

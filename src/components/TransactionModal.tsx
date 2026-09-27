@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CATEGORIES_DATA, CategoryData, NomItem } from '../data/categoriesData';
 import { TransactionRecord, formatRupiah } from '../types/ppob';
+import type { PaymentSettings } from '../lib/types';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -15,6 +16,8 @@ interface TransactionModalProps {
   initialGroup?: string | null;
   /** Katalog PPOB yang sudah disatukan dengan data Supabase. */
   categories?: CategoryData[];
+  /** Konfigurasi QRIS dari /admin/pembayaran (gambar, nama merchant, NMID). */
+  payments?: PaymentSettings | null;
   onTransactionCreated: (trx: TransactionRecord) => void;
   onGoToTracker: (trxId: string) => void;
   showToast: (msg: string) => void;
@@ -54,6 +57,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   initialItemLabel,
   initialGroup,
   categories: availableCategories = CATEGORIES_DATA,
+  payments = null,
   onTransactionCreated,
   onGoToTracker,
   showToast
@@ -567,6 +571,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
               {/* QR Box */}
               <div className="w-[200px] h-[200px] sm:w-[220px] sm:h-[220px] mx-auto bg-white rounded-2xl border-2 border-[#E8DDD2] p-3 shadow-md flex flex-col items-center justify-center relative">
+                {payments?.qris.imageUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={payments.qris.imageUrl}
+                    alt="Kode QRIS merchant"
+                    loading="lazy"
+                    className="h-full w-full rounded-lg bg-white object-contain"
+                  />
+                ) : (
                 <svg viewBox="0 0 160 160" className="w-full h-full" fill="#2C211D">
                   <rect x="10" y="10" width="40" height="40" rx="3" fill="#2C211D" />
                   <rect x="16" y="16" width="28" height="28" rx="2" fill="white" />
@@ -604,10 +617,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     GPN
                   </text>
                 </svg>
+                )}
               </div>
 
               <div className="text-[11px] text-[#9B8A82]">
-                NMID: ID1024887650123 · Merchant: HESOLVIAN PPOB · {trxRef}
+                NMID: {payments?.qris.nmid || 'ID1024887650123'} · Merchant:{' '}
+                {payments?.qris.merchantName || 'HESOLVIAN PPOB'} · {trxRef}
               </div>
 
               <div className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#9A6B12] bg-[#FBF0D8] px-3.5 py-1.5 rounded-full border border-[#9A6B12]/20">

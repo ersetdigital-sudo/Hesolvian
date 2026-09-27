@@ -52,6 +52,8 @@ src/app/admin/
     artikel/             CRUD artikel (+ gambar sampul)
     pusat-bantuan/       CRUD FAQ yang tampil di halaman publik /bantuan
     transaksi/           Ledger, filter, entri manual, ekspor CSV
+    pembayaran/          Metode Pembayaran: QRIS (gambar diunggah ke Cloudinary),
+                         transfer bank, Virtual Account, tunai + toggle aktif
     sistem/              Pengaturan nama situs + kontak
     [section]/           Halaman penampung untuk menu yang belum dibangun
 src/app/api/
@@ -98,6 +100,15 @@ yang digenerate otomatis (tanpa file gambar manual).
 
 Isi **`NEXT_PUBLIC_SITE_URL`** di produksi supaya URL kanonik & gambar Open Graph
 absolut (lokal default-nya `http://localhost:3000`).
+
+### Metode pembayaran
+
+Diatur di **`/admin/pembayaran`**, tersimpan sebagai satu key `payments` di
+`site_settings` (jsonb). Gambar QRIS diunggah lewat Cloudinary bertanda tangan
+(`/api/cloudinary/sign`), lalu URL-nya dipakai `QrisPaymentCard` dan langkah
+pembayaran di `TransactionModal`. Kalau belum ada gambar, kartu memakai kode QR
+contoh. Kalau QRIS dimatikan dari panel, kartu pembayaran menampilkan
+pemberitahuan bahwa metode itu sedang tidak tersedia.
 
 ### Data publik
 

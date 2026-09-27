@@ -8,10 +8,12 @@ import type {
   DashboardData,
   FaqRow,
   FlashSaleRow,
+  PaymentSettings,
   ProductRow,
   TransactionRow,
   TransactionStatus
 } from './types';
+import { DEFAULT_PAYMENT_SETTINGS } from './types';
 
 /**
  * Semua fungsi di file ini HARUS dipanggil dari server.
@@ -223,6 +225,38 @@ export async function saveSiteSetting(key: string, value: unknown): Promise<void
     .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
 
   if (error) throw new Error(error.message);
+}
+
+/* ============================================================
+ * METODE PEMBAYARAN
+ * ============================================================ */
+
+/**
+ * Konfigurasi metode pembayaran (QRIS, transfer bank, VA, tunai).
+ * Bagian yang belum pernah disimpan diisi dari `DEFAULT_PAYMENT_SETTINGS`
+ * supaya halaman publik tidak pernah kosong.
+ */
+export async function getPaymentSettings(): Promise<PaymentSettings> {
+  const { data, error } = await supabaseAdmin()
+    .from('site_settings')
+    .select('value')
+    .eq('key', 'payments')
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  const stored = (data?.value as Partial<PaymentSettings> | undefined) ?? {};
+
+  return {
+    qris: { ...DEFAULT_PAYMENT_SETTINGS.qris, ...stored.qris },
+    transfer: {
+      ...DEFAULT_PAYMENT_SETTINGS.transfer,
+      ...stored.transfer,
+      accounts: stored.transfer?.accounts ?? []
+    },
+    va: { ...DEFAULT_PAYMENT_SETTINGS.va, ...stored.va },
+    tunai: { ...DEFAULT_PAYMENT_SETTINGS.tunai, ...stored.tunai }
+  };
 }
 
 /* ============================================================
