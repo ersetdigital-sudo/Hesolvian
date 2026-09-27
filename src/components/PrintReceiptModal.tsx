@@ -91,6 +91,10 @@ export const PrintReceiptModal: React.FC<PrintReceiptModalProps> = ({
                 <span>RECONCILE CODE:</span>
                 <span>{data.reconcileId}</span>
               </div>
+              <div className="flex justify-between">
+                <span>METODE BAYAR:</span>
+                <span className="font-bold">{data.method}</span>
+              </div>
             </div>
 
             <div className="border-t border-dashed border-[#8a716c]/40 my-2" />

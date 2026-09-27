@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CATEGORIES_DATA, CategoryData, NomItem } from '../data/categoriesData';
 import { TransactionRecord, formatRupiah } from '../types/ppob';
 import type { PaymentSettings } from '../lib/types';
@@ -50,6 +50,43 @@ function detectOperator(number: string): { name: string; color: string; bg: stri
   return null;
 }
 
+type PayMethodId = 'qris' | 'transfer' | 'tunai';
+
+interface PayMethodOption {
+  id: PayMethodId;
+  label: string;
+  icon: string;
+}
+
+/**
+ * Susun metode pembayaran yang boleh dipilih pelanggan berdasarkan pengaturan
+ * /admin/pembayaran:
+ * - QRIS tampil kalau `qris.enabled`.
+ * - Transfer hanya tampil kalau aktif DAN minimal ada satu rekening.
+ * - Tunai tampil kalau aktif.
+ * Kalau admin belum mengatur apa pun, QRIS tetap jadi default (perilaku lama).
+ */
+function buildPayMethods(payments: PaymentSettings | null | undefined): PayMethodOption[] {
+  const methods: PayMethodOption[] = [];
+
+  if (payments ? payments.qris.enabled : true) {
+    methods.push({ id: 'qris', label: 'QRIS', icon: 'qr_code_scanner' });
+  }
+  if (payments?.transfer.enabled && (payments.transfer.accounts?.length ?? 0) > 0) {
+    methods.push({ id: 'transfer', label: 'Transfer Bank', icon: 'account_balance' });
+  }
+  if (payments?.tunai.enabled) {
+    methods.push({ id: 'tunai', label: 'Tunai / Agen', icon: 'storefront' });
+  }
+
+  // Jaring pengaman: modal tidak pernah kosong tanpa metode pembayaran.
+  if (methods.length === 0) {
+    methods.push({ id: 'qris', label: 'QRIS', icon: 'qr_code_scanner' });
+  }
+
+  return methods;
+}
+
 export const TransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
   onClose,
@@ -73,6 +110,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [secondsLeft, setSecondsLeft] = useState(15 * 60);
   const [errorTarget, setErrorTarget] = useState(false);
   const [errorItem, setErrorItem] = useState(false);
+  const [payMethod, setPayMethod] = useState<PayMethodId>('qris');
+
+  // Metode pembayaran yang ditawarkan, mengikuti pengaturan /admin/pembayaran.
+  const payMethods = useMemo(() => buildPayMethods(payments), [payments]);
 
   // Sync with initial category whenever modal opens
   useEffect(() => {
@@ -81,6 +122,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     setCatId(initialCategoryId);
     setTargetNumber('');
     setStep(1);
+    setPayMethod('qris');
     setErrorTarget(false);
     setErrorItem(false);
 
@@ -130,6 +172,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const currentCategory: CategoryData =
     availableCategories.find((c) => c.id === catId) || availableCategories[0];
   const activeGroup = currentCategory.groups[groupIdx] || currentCategory.groups[0];
+  // `payMethods` selalu berisi minimal satu entri, jadi index 0 aman.
+  const activeMethod = payMethods.find((m) => m.id === payMethod) ?? payMethods[0];
 
   const detectedOp =
     currentCategory.id === 'pulsa' || currentCategory.id === 'data'
@@ -237,7 +281,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         stepProgressText: 'Lengkap (4 dari 4 Tahapan)',
         steps: [
           { step: 1, title: 'Pesanan Dibuat', subtitle: 'ID Transaksi tervalidasi', time: timeStr, status: 'completed', icon: 'receipt_long' },
-          { step: 2, title: 'Pembayaran QRIS', subtitle: 'Mutasi kliring lunas', time: 'Baru saja', status: 'completed', icon: 'qr_code_scanner' },
+          { step: 2, title: `Pembayaran ${activeMethod.label}`, subtitle: 'Konfirmasi pembayaran diterima', time: 'Baru saja', status: 'completed', icon: activeMethod.icon },
           { step: 3, title: `Routing Biller ${currentCategory.name}`, subtitle: 'Switching provider sukses', time: 'Baru saja', status: 'completed', icon: 'hub' },
           { step: 4, title: 'SN / Token Terbit', subtitle: 'Kuitansi sah diterbitkan', time: 'Baru saja', status: 'completed', icon: 'verified' },
         ],
@@ -256,7 +300,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         adminFee: currentCategory.admin,
         discount: 0,
         total: totalOf(),
-        method: 'QRIS Dinamis 24 Jam',
+        method:
+          activeMethod.id === 'qris'
+            ? 'QRIS Dinamis 24 Jam'
+            : activeMethod.id === 'transfer'
+            ? 'Transfer Bank Manual'
+            : 'Tunai di Agen Hesolvian',
         reconcileId: `#RC-${Math.floor(1000 + Math.random() * 9000)}-X`,
         billerName: 'Mitra Switching Nasional Host-to-Host'
       };
@@ -304,7 +353,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   : step === 2
                   ? 'Ringkasan Transaksi'
                   : step === 3
-                  ? 'Pembayaran QRIS'
+                  ? `Pembayaran ${activeMethod.label}`
                   : 'Status Transaksi'}
               </h3>
               <p className="text-[11.5px] sm:text-[12px] text-[#6B5A53] truncate mt-0.5">
@@ -313,7 +362,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   : step === 2
                   ? 'Periksa kembali rincian pesanan Anda'
                   : step === 3
-                  ? 'Scan kode QRIS melalui m-Banking atau E-Wallet'
+                  ? activeMethod.id === 'qris'
+                    ? 'Scan kode QRIS melalui m-Banking atau E-Wallet'
+                    : activeMethod.id === 'transfer'
+                    ? 'Selesaikan transfer lalu konfirmasi pembayaran'
+                    : 'Bayar tunai di agen mitra Hesolvian'
                   : 'Transaksi berhasil diselesaikan'}
               </p>
             </div>
@@ -533,8 +586,42 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 </div>
               </div>
 
+              {payMethods.length > 1 && (
+                <div className="space-y-2.5">
+                  <div className="text-[13px] sm:text-[14px] font-bold text-[#2C211D]">
+                    Metode Pembayaran
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {payMethods.map((m) => {
+                      const isSelected = activeMethod.id === m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setPayMethod(m.id)}
+                          className={`text-left p-3 rounded-2xl border transition-all cursor-pointer flex items-center gap-2.5 ${
+                            isSelected
+                              ? 'bg-white border-[#B4432C] ring-2 ring-[#B4432C]/40 shadow-sm'
+                              : 'bg-[#FBF6EF] border-[#E8DDD2] hover:bg-white hover:border-[#dec0ba]'
+                          }`}
+                        >
+                          <span
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                              isSelected ? 'bg-[#B4432C] text-white' : 'bg-[#F3EADF] text-[#6B5A53]'
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[18px]">{m.icon}</span>
+                          </span>
+                          <span className="text-[12.5px] font-bold text-[#2C211D]">{m.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="text-[11.5px] text-[#6B5A53] text-center">
-                Periksa kembali data nomor tujuan Anda. Pembayaran diverifikasi otomatis via QRIS.
+                Periksa kembali data nomor tujuan Anda. Pembayaran diverifikasi otomatis oleh sistem.
               </div>
 
               <div className="flex gap-2.5 pt-2">
@@ -550,8 +637,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   onClick={() => setStep(3)}
                   className="flex-1 bg-[#B4432C] hover:bg-[#8E3220] text-white py-3 px-4 rounded-xl font-bold text-[14px] flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.985] cursor-pointer min-h-[44px]"
                 >
-                  <span>Bayar dengan QRIS</span>
-                  <span className="material-symbols-outlined text-[18px]">qr_code_scanner</span>
+                  <span>Bayar dengan {activeMethod.label}</span>
+                  <span className="material-symbols-outlined text-[18px]">{activeMethod.icon}</span>
                 </button>
               </div>
             </div>
@@ -562,13 +649,19 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <div className="text-center space-y-4">
               <div className="space-y-1">
                 <div className="text-[13px] text-[#6B5A53]">
-                  Pindai kode QRIS menggunakan m-Banking atau E-Wallet:
+                  {activeMethod.id === 'qris'
+                    ? 'Pindai kode QRIS menggunakan m-Banking atau E-Wallet:'
+                    : activeMethod.id === 'transfer'
+                    ? 'Transfer tepat nominal ke rekening tujuan berikut:'
+                    : 'Bayar tunai di agen mitra Hesolvian terdekat:'}
                 </div>
                 <div className="text-3xl font-extrabold text-[#B4432C] tracking-tight">
                   {formatRupiah(totalOf())}
                 </div>
               </div>
 
+              {activeMethod.id === 'qris' && (
+                <>
               {/* QR Box */}
               <div className="w-[200px] h-[200px] sm:w-[220px] sm:h-[220px] mx-auto bg-white rounded-2xl border-2 border-[#E8DDD2] p-3 shadow-md flex flex-col items-center justify-center relative">
                 {payments?.qris.imageUrl ? (
@@ -643,6 +736,67 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   )
                 )}
               </div>
+                </>
+              )}
+
+              {activeMethod.id === 'transfer' && payments && (
+                <div className="space-y-2.5 text-left">
+                  {payments.transfer.accounts.map((acc) => (
+                    <div
+                      key={acc.id}
+                      className="bg-[#FBF6EF] border border-[#E8DDD2] rounded-2xl p-4 flex items-start justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-[11.5px] font-bold text-[#B4432C] uppercase tracking-wide">
+                          {acc.bank}
+                        </div>
+                        <div className="text-[16px] font-mono font-extrabold text-[#2C211D] break-all">
+                          {acc.accountNumber}
+                        </div>
+                        <div className="text-[12px] text-[#6B5A53]">a.n. {acc.accountName}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(acc.accountNumber);
+                          showToast(`Nomor rekening ${acc.bank} disalin!`);
+                        }}
+                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#dec0ba] rounded-xl text-[12px] font-bold text-[#2C211D] hover:bg-[#F3EADF] cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[16px] text-[#B4432C]">
+                          content_copy
+                        </span>
+                        <span>Salin</span>
+                      </button>
+                    </div>
+                  ))}
+                  <div className="text-[11.5px] text-[#6B5A53] text-center">
+                    Setelah transfer, tekan &quot;Saya Sudah Bayar&quot; — admin akan memverifikasi mutasi masuk.
+                  </div>
+                </div>
+              )}
+
+              {activeMethod.id === 'tunai' && (
+                <div className="space-y-3 text-left">
+                  <div className="bg-[#FBF6EF] border border-[#E8DDD2] rounded-2xl p-4 space-y-2.5">
+                    <div className="flex items-center gap-2 text-[13px] font-bold text-[#2C211D]">
+                      <span className="material-symbols-outlined text-[18px] text-[#B4432C]">
+                        storefront
+                      </span>
+                      <span>Pembayaran di agen mitra</span>
+                    </div>
+                    <p className="text-[12.5px] text-[#6B5A53] leading-relaxed">
+                      {payments?.tunai.note?.trim()
+                        ? payments.tunai.note
+                        : 'Bayar tunai di agen Hesolvian terdekat dengan menyebut kode transaksi di bawah.'}
+                    </p>
+                    <div className="flex items-center justify-between gap-2 bg-white border border-[#dec0ba]/60 rounded-xl px-3 py-2">
+                      <span className="text-[12px] text-[#6B5A53]">Kode Transaksi</span>
+                      <span className="font-mono font-bold text-[#2C211D]">{trxRef}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-2.5 pt-3">
                 <button

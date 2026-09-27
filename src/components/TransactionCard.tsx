@@ -260,26 +260,103 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({
           {/* ======================================================== */}
           {/* MIDDLE HERO AREA (PENDING / PROCESSING / TOKEN SUCCESS) */}
           {/* ======================================================== */}
-          {/* Case 1: Status is Pending -> Show authentic QRIS payment box with countdown & QR code */}
-          {data.status === 'pending' &&
-            (payments && !payments.qris.enabled ? (
-              <div className="space-y-1.5 rounded-2xl border-2 border-[#E8DDD2] bg-[#FBF6EF] p-6 text-center">
-                <span className="material-symbols-outlined text-[30px] text-[#B4432C]">qr_code_2</span>
-                <p className="text-[14px] font-bold text-[#2C211D]">
-                  Pembayaran QRIS sedang dinonaktifkan
-                </p>
-                <p className="text-[12.5px] text-[#6B5A53]">
-                  Hubungi admin loket atau gunakan metode pembayaran lain yang tersedia.
-                </p>
-              </div>
-            ) : (
+          {/* Case 1: Pending -> tampilkan instruksi sesuai metode yang dipilih (QRIS / transfer / tunai) */}
+          {data.status === 'pending' && (() => {
+            const method = data.method.toLowerCase();
+
+            // Transfer bank: tampilkan rekening tujuan sesuai pengaturan admin.
+            if (method.includes('transfer')) {
+              const accounts = payments?.transfer.accounts ?? [];
+              return (
+                <div className="space-y-3 rounded-2xl border-2 border-[#E8DDD2] bg-[#FBF6EF] p-5 sm:p-6">
+                  <div className="text-center space-y-1">
+                    <span className="material-symbols-outlined text-[30px] text-[#B4432C]">
+                      account_balance
+                    </span>
+                    <p className="text-[14px] font-bold text-[#2C211D]">Menunggu Pembayaran Transfer</p>
+                    <p className="text-[15px] font-extrabold text-[#B4432C]">{formatRupiah(data.total)}</p>
+                  </div>
+
+                  {accounts.length > 0 ? (
+                    <div className="space-y-2.5">
+                      {accounts.map((acc) => (
+                        <div
+                          key={acc.id}
+                          className="bg-white border border-[#dec0ba]/60 rounded-2xl p-3.5 flex items-start justify-between gap-3"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-[11px] font-bold text-[#B4432C] uppercase tracking-wide">
+                              {acc.bank}
+                            </div>
+                            <div className="text-[15px] font-mono font-extrabold text-[#2C211D] break-all">
+                              {acc.accountNumber}
+                            </div>
+                            <div className="text-[12px] text-[#6B5A53]">a.n. {acc.accountName}</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(acc.accountNumber);
+                              showToast(`Nomor rekening ${acc.bank} disalin!`);
+                            }}
+                            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 bg-[#FBF6EF] border border-[#dec0ba] rounded-xl text-[12px] font-bold text-[#2C211D] hover:bg-[#F3EADF] cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[16px] text-[#B4432C]">
+                              content_copy
+                            </span>
+                            <span>Salin</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-[12.5px] text-[#6B5A53] text-center">
+                      Hubungi admin loket untuk nomor rekening tujuan.
+                    </p>
+                  )}
+                </div>
+              );
+            }
+
+            // Tunai / agen: tampilkan instruksi dari pengaturan admin.
+            if (method.includes('tunai')) {
+              return (
+                <div className="space-y-2.5 rounded-2xl border-2 border-[#E8DDD2] bg-[#FBF6EF] p-6 text-center">
+                  <span className="material-symbols-outlined text-[30px] text-[#B4432C]">storefront</span>
+                  <p className="text-[14px] font-bold text-[#2C211D]">Menunggu Pembayaran Tunai</p>
+                  <p className="text-[15px] font-extrabold text-[#B4432C]">{formatRupiah(data.total)}</p>
+                  <p className="text-[12.5px] text-[#6B5A53] leading-relaxed">
+                    {payments?.tunai.note?.trim() ||
+                      'Bayar tunai di agen Hesolvian terdekat dengan menyebut kode transaksi di atas.'}
+                  </p>
+                </div>
+              );
+            }
+
+            // QRIS (default): perilaku lama dipertahankan.
+            if (payments && !payments.qris.enabled) {
+              return (
+                <div className="space-y-1.5 rounded-2xl border-2 border-[#E8DDD2] bg-[#FBF6EF] p-6 text-center">
+                  <span className="material-symbols-outlined text-[30px] text-[#B4432C]">qr_code_2</span>
+                  <p className="text-[14px] font-bold text-[#2C211D]">
+                    Pembayaran QRIS sedang dinonaktifkan
+                  </p>
+                  <p className="text-[12.5px] text-[#6B5A53]">
+                    Hubungi admin loket atau gunakan metode pembayaran lain yang tersedia.
+                  </p>
+                </div>
+              );
+            }
+
+            return (
               <QrisPaymentCard
                 data={data}
                 payments={payments}
                 onPaymentSuccess={onPaymentSuccess}
                 showToast={showToast}
               />
-            ))}
+            );
+          })()}
 
           {/* Case 2: Status is Processing -> Show active biller switching queue banner with resync button */}
           {data.status === 'processing' && (
