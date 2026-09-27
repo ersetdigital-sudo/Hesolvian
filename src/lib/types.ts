@@ -112,11 +112,13 @@ export interface BankAccount {
   accountName: string;
 }
 
-/** QRIS yang ditampilkan di kartu pembayaran publik. */
+/**
+ * QRIS yang ditampilkan di kartu pembayaran publik.
+ * Nama merchant & NMID sengaja tidak diatur di sini: yang dibutuhkan hanya
+ * gambarnya, sedangkan identitas merchant ikut tertera di dalam gambar itu.
+ */
 export interface QrisSettings {
   enabled: boolean;
-  merchantName: string;
-  nmid: string;
   /** URL gambar QRIS (transformasi Cloudinary) — null = pakai QR contoh. */
   imageUrl: string | null;
   /** public_id Cloudinary, dipakai untuk menghapus aset lama. */
@@ -151,8 +153,6 @@ export interface PaymentSettings {
 export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
   qris: {
     enabled: true,
-    merchantName: 'Hesolvian Payment / PT Hesolvian Nusantara',
-    nmid: 'ID1020039281920',
     imageUrl: null,
     imagePublicId: null
   },

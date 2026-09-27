@@ -5,7 +5,6 @@ import { requireAdmin } from '@/lib/adminAuth';
 import { destroyCloudinaryAsset } from '@/lib/cloudinary';
 import { describeDbError, supabaseAdmin } from '@/lib/supabase';
 import type { ActionState, BankAccount, ContentStatus, PaymentSettings, TransactionStatus } from '@/lib/types';
-import { DEFAULT_PAYMENT_SETTINGS } from '@/lib/types';
 
 /**
  * Semua mutasi panel admin.
@@ -551,8 +550,6 @@ export async function savePaymentSettingsAction(
   const settings: PaymentSettings = {
     qris: {
       enabled: text(formData, 'qris_enabled') === 'on',
-      merchantName: text(formData, 'qris_merchant_name', DEFAULT_PAYMENT_SETTINGS.qris.merchantName),
-      nmid: text(formData, 'qris_nmid'),
       imageUrl: optionalText(formData, 'qris_image_url'),
       imagePublicId: optionalText(formData, 'qris_image_public_id')
     },

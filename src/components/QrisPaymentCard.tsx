@@ -57,11 +57,9 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
   };
 
   const merchantName =
-    payments?.qris.merchantName ||
-    data.qrisData?.merchantName ||
-    'Hesolvian Payment / PT Hesolvian Nusantara';
+    data.qrisData?.merchantName || 'Hesolvian Payment / PT Hesolvian Nusantara';
 
-  const nmid = payments?.qris.nmid || data.qrisData?.nmid || 'ID1020039281920';
+  const nmid = data.qrisData?.nmid || 'ID1020039281920';
 
   return (
     <div className="bg-white rounded-2xl sm:rounded-3xl border-2 border-[#fe7e5d]/40 shadow-sm overflow-hidden p-4 sm:p-7">

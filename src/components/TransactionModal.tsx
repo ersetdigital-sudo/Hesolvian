@@ -621,8 +621,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               </div>
 
               <div className="text-[11px] text-[#9B8A82]">
-                NMID: {payments?.qris.nmid || 'ID1024887650123'} · Merchant:{' '}
-                {payments?.qris.merchantName || 'HESOLVIAN PPOB'} · {trxRef}
+                NMID: ID1024887650123 · Merchant: HESOLVIAN PPOB · {trxRef}
               </div>
 
               <div className="inline-flex items-center gap-1.5 text-[12px] font-bold text-[#9A6B12] bg-[#FBF0D8] px-3.5 py-1.5 rounded-full border border-[#9A6B12]/20">

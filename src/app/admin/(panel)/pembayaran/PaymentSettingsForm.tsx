@@ -2,7 +2,7 @@
 
 import AdminForm from '@/components/admin/AdminForm';
 import ImageUpload from '@/components/admin/ImageUpload';
-import { Alert, Checkbox, Field, SectionHeading, TextArea, TextInput } from '@/components/admin/ui';
+import { Alert, Checkbox, Field, SectionHeading, TextArea } from '@/components/admin/ui';
 import BankAccountsEditor from './BankAccountsEditor';
 import { savePaymentSettingsAction } from '@/app/admin/(panel)/actions';
 import type { PaymentSettings } from '@/lib/types';
@@ -27,7 +27,7 @@ export default function PaymentSettingsForm({ settings }: { settings: PaymentSet
       <section className="rounded-xl border border-[#f0efed] p-5">
         <SectionHeading
           title="QRIS"
-          subtitle="Gambar QRIS disimpan di Cloudinary dan ditampilkan di kartu pembayaran pelanggan."
+          subtitle="Cukup unggah gambar QRIS-nya — disimpan di Cloudinary dan ditampilkan di kartu pembayaran pelanggan."
         />
 
         <div className="mb-5">
@@ -38,45 +38,19 @@ export default function PaymentSettingsForm({ settings }: { settings: PaymentSet
           />
         </div>
 
-        {/* Kolom kiri dibatasi supaya pratinjau QR tidak membengkak sebesar form. */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:items-start">
-          <div className="md:col-span-1">
-            <ImageUpload
-              urlField="qris_image_url"
-              publicIdField="qris_image_public_id"
-              initialUrl={qris.imageUrl}
-              initialPublicId={qris.imagePublicId}
-              folder="pembayaran"
-              label="Gambar QRIS"
-              hint="JPG/PNG/WEBP, maks 2 MB. Kalau kosong, kartu pembayaran memakai kode QR contoh."
-              ratio="square"
-              previewWidth={600}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 md:col-span-2">
-            <Field label="Nama merchant" htmlFor="qris_merchant_name">
-              <TextInput
-                id="qris_merchant_name"
-                name="qris_merchant_name"
-                defaultValue={qris.merchantName}
-                placeholder="Hesolvian Payment / PT Hesolvian Nusantara"
-              />
-            </Field>
-
-            <Field
-              label="NMID"
-              htmlFor="qris_nmid"
-              hint="Nomor identitas merchant QRIS, mis. ID1020039281920."
-            >
-              <TextInput
-                id="qris_nmid"
-                name="qris_nmid"
-                defaultValue={qris.nmid}
-                placeholder="ID1020039281920"
-              />
-            </Field>
-          </div>
+        {/* Dibuat sempit supaya pratinjau QR tidak membengkak sebesar lebar form. */}
+        <div className="max-w-[260px]">
+          <ImageUpload
+            urlField="qris_image_url"
+            publicIdField="qris_image_public_id"
+            initialUrl={qris.imageUrl}
+            initialPublicId={qris.imagePublicId}
+            folder="pembayaran"
+            label="Gambar QRIS"
+            hint="JPG/PNG/WEBP, maks 2 MB. Kalau kosong, kartu pembayaran memakai kode QR contoh."
+            ratio="square"
+            previewWidth={600}
+          />
         </div>
       </section>
 
@@ -146,8 +120,7 @@ export default function PaymentSettingsForm({ settings }: { settings: PaymentSet
 
       <Alert>
         Gambar QRIS diunggah langsung ke Cloudinary dengan tanda tangan sisi server, jadi API secret
-        tidak pernah masuk ke browser. Nama merchant &amp; NMID di atas menggantikan nilai contoh yang
-        dipakai kartu pembayaran publik.
+        tidak pernah masuk ke browser.
       </Alert>
     </AdminForm>
   );
