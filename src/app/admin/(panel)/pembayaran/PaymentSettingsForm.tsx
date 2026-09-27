@@ -38,36 +38,45 @@ export default function PaymentSettingsForm({ settings }: { settings: PaymentSet
           />
         </div>
 
-        <ImageUpload
-          urlField="qris_image_url"
-          publicIdField="qris_image_public_id"
-          initialUrl={qris.imageUrl}
-          initialPublicId={qris.imagePublicId}
-          folder="pembayaran"
-          label="Gambar QRIS"
-          hint="Pakai gambar QRIS resmi dari merchant Anda (JPG/PNG/WEBP, maks 2 MB). Kalau kosong, kartu pembayaran memakai kode QR contoh."
-          ratio="square"
-          previewWidth={600}
-        />
-
-        <div className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field label="Nama merchant" htmlFor="qris_merchant_name">
-            <TextInput
-              id="qris_merchant_name"
-              name="qris_merchant_name"
-              defaultValue={qris.merchantName}
-              placeholder="Hesolvian Payment / PT Hesolvian Nusantara"
+        {/* Kolom kiri dibatasi supaya pratinjau QR tidak membengkak sebesar form. */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:items-start">
+          <div className="md:col-span-1">
+            <ImageUpload
+              urlField="qris_image_url"
+              publicIdField="qris_image_public_id"
+              initialUrl={qris.imageUrl}
+              initialPublicId={qris.imagePublicId}
+              folder="pembayaran"
+              label="Gambar QRIS"
+              hint="JPG/PNG/WEBP, maks 2 MB. Kalau kosong, kartu pembayaran memakai kode QR contoh."
+              ratio="square"
+              previewWidth={600}
             />
-          </Field>
+          </div>
 
-          <Field label="NMID" htmlFor="qris_nmid" hint="Nomor identitas merchant QRIS, mis. ID1020039281920.">
-            <TextInput
-              id="qris_nmid"
-              name="qris_nmid"
-              defaultValue={qris.nmid}
-              placeholder="ID1020039281920"
-            />
-          </Field>
+          <div className="grid grid-cols-1 gap-5 md:col-span-2">
+            <Field label="Nama merchant" htmlFor="qris_merchant_name">
+              <TextInput
+                id="qris_merchant_name"
+                name="qris_merchant_name"
+                defaultValue={qris.merchantName}
+                placeholder="Hesolvian Payment / PT Hesolvian Nusantara"
+              />
+            </Field>
+
+            <Field
+              label="NMID"
+              htmlFor="qris_nmid"
+              hint="Nomor identitas merchant QRIS, mis. ID1020039281920."
+            >
+              <TextInput
+                id="qris_nmid"
+                name="qris_nmid"
+                defaultValue={qris.nmid}
+                placeholder="ID1020039281920"
+              />
+            </Field>
+          </div>
         </div>
       </section>
 
