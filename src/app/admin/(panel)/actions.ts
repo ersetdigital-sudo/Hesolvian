@@ -276,10 +276,8 @@ export async function createTransactionAction(
   }
 
   const customerId = text(formData, 'customer_id');
-  const customerName = text(formData, 'customer_name');
   const productLabel = text(formData, 'product_label');
 
-  if (!customerName) return { ok: false, message: 'Nama pelanggan wajib diisi.' };
   if (!productLabel) return { ok: false, message: 'Produk wajib diisi.' };
 
   const unitPrice = Math.max(0, int(formData, 'unit_price'));
@@ -293,7 +291,6 @@ export async function createTransactionAction(
 
   const payload = {
     id: `HSV${stamp}-${suffix}`,
-    customer_name: customerName,
     customer_id: customerId,
     category_id: text(formData, 'category_id', 'pulsa'),
     product_label: productLabel,
@@ -315,6 +312,51 @@ export async function createTransactionAction(
 
   revalidateEverything();
   return { ok: true, message: `Transaksi ${payload.id} tercatat.` };
+}
+
+export async function updateTransactionAction(
+  _prevState: ActionState | null,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    await requireAdmin();
+  } catch {
+    return { ok: false, message: 'Sesi admin habis. Silakan login ulang.' };
+  }
+
+  const id = text(formData, '_id');
+  if (!id) return { ok: false, message: 'ID pesanan tidak ditemukan.' };
+
+  const productLabel = text(formData, 'product_label');
+  if (!productLabel) return { ok: false, message: 'Produk wajib diisi.' };
+
+  const qty = Math.max(1, int(formData, 'qty', 1));
+  const unitPrice = Math.max(0, int(formData, 'unit_price'));
+  const adminFee = Math.max(0, int(formData, 'admin_fee'));
+  const discount = Math.max(0, int(formData, 'discount'));
+
+  const payload = {
+    customer_id: text(formData, 'customer_id'),
+    category_id: text(formData, 'category_id', 'pulsa'),
+    product_label: productLabel,
+    status: (text(formData, 'status', 'success') as TransactionStatus) || 'success',
+    qty,
+    unit_price: unitPrice,
+    admin_fee: adminFee,
+    discount,
+    total: unitPrice * qty + adminFee - discount,
+    method: text(formData, 'method', 'QRIS')
+  };
+
+  try {
+    const { error } = await supabaseAdmin().from('transactions').update(payload).eq('id', id);
+    if (error) return { ok: false, message: describeDbError(error) };
+  } catch (error) {
+    return { ok: false, message: describeDbError(error) };
+  }
+
+  revalidateEverything();
+  return { ok: true, message: `Pesanan ${id} berhasil diperbarui.` };
 }
 
 export async function deleteTransactionAction(id: string): Promise<ActionState> {

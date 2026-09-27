@@ -240,55 +240,33 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         timeZone: 'Asia/Jakarta'
       });
 
-      let tokenLabel = 'Nomor Referensi';
-      let tokenCode = '';
-      let tokenSub = 'Pembayaran berhasil diproses oleh sistem.';
-
-      if (currentCategory.id === 'pln') {
-        tokenLabel = '20 Digit Token Listrik PLN';
-        const t1 = Math.floor(1000 + Math.random() * 9000);
-        const t2 = Math.floor(1000 + Math.random() * 9000);
-        const t3 = Math.floor(1000 + Math.random() * 9000);
-        const t4 = Math.floor(1000 + Math.random() * 9000);
-        const t5 = Math.floor(1000 + Math.random() * 9000);
-        tokenCode = `${t1} ${t2} ${t3} ${t4} ${t5}`;
-        tokenSub = 'Masukkan 20 digit angka ini ke meteran prabayar Anda lalu tekan ENTER.';
-      } else if (currentCategory.id === 'pulsa' || currentCategory.id === 'data') {
-        tokenLabel = 'Nomor Seri Operator (SN)';
-        tokenCode = `SN-${Math.floor(1000000000 + Math.random() * 9000000000)}`;
-        tokenSub = 'Pulsa / paket data telah berhasil diisikan ke nomor tujuan.';
-      } else if (currentCategory.id === 'pdam') {
-        tokenLabel = 'Nomor Referensi Pelunasan PDAM';
-        tokenCode = `LUNAS-PDAM-${Math.floor(1000000 + Math.random() * 9000000)}`;
-        tokenSub = 'Tagihan PDAM periode berjalan telah terbayar lunas ke kas daerah.';
-      } else {
-        tokenLabel = 'Kode Verifikasi Mutasi';
-        tokenCode = `TRX-OK-${Math.floor(10000000 + Math.random() * 90000000)}`;
-        tokenSub = 'Pembayaran sah dan tercatat pada sistem loket PPOB.';
-      }
-
+      // Konfirmasi pelanggan hanya menandai pembayaran diterima. Transaksi belum
+      // selesai: status masuk "processing" (menunggu penyelesaian server provider)
+      // dan SN / token baru terbit saat status disinkronkan di Cek Transaksi.
       const newRecord: TransactionRecord = {
         id: trxRef,
-        status: 'success',
-        statusLabel: 'Berhasil / Selesai',
-        badgeBg: 'bg-[#E4F3EC]',
-        badgeColor: 'text-[#1F7A54]',
-        accentBg: 'bg-[#1F7A54]',
+        status: 'processing',
+        statusLabel: 'Diproses Provider',
+        badgeBg: 'bg-[#FCEAE5]',
+        badgeColor: 'text-[#B4432C]',
+        accentBg: 'bg-[#B4432C]',
         createdAt: dateStr,
-        clearedAt: `${timeStr} (14 Detik)`,
-        durationText: '14 Detik',
-        stepActive: 4,
-        stepProgressText: 'Lengkap (4 dari 4 Tahapan)',
+        clearedAt: `Dikonfirmasi ${timeStr}`,
+        durationText: 'Sedang Diproses',
+        stepActive: 3,
+        stepProgressText: 'Sedang Diproses (3 dari 4 Tahapan)',
         steps: [
           { step: 1, title: 'Pesanan Dibuat', subtitle: 'ID Transaksi tervalidasi', time: timeStr, status: 'completed', icon: 'receipt_long' },
-          { step: 2, title: `Pembayaran ${activeMethod.label}`, subtitle: 'Konfirmasi pembayaran diterima', time: 'Baru saja', status: 'completed', icon: activeMethod.icon },
-          { step: 3, title: `Routing Biller ${currentCategory.name}`, subtitle: 'Switching provider sukses', time: 'Baru saja', status: 'completed', icon: 'hub' },
-          { step: 4, title: 'SN / Token Terbit', subtitle: 'Kuitansi sah diterbitkan', time: 'Baru saja', status: 'completed', icon: 'verified' },
+          { step: 2, title: `Pembayaran ${activeMethod.label} Diterima`, subtitle: 'Konfirmasi pembayaran diterima', time: 'Baru saja', status: 'completed', icon: activeMethod.icon },
+          { step: 3, title: `Routing Biller ${currentCategory.name}`, subtitle: 'Menunggu penyelesaian server provider', time: 'Sedang Berjalan', status: 'active', icon: 'hub' },
+          { step: 4, title: 'SN / Token Terbit', subtitle: 'Menunggu transaksi selesai', time: '-', status: 'waiting', icon: 'verified' },
         ],
-        tokenLabel,
-        tokenCode,
-        tokenSub,
-        hasCopyToken: true,
+        processingMessage:
+          activeMethod.id === 'qris'
+            ? 'Pembayaran QRIS diterima. Sistem sedang meminta penyelesaian pesanan ke server provider — status diperbarui otomatis.'
+            : activeMethod.id === 'transfer'
+            ? 'Konfirmasi transfer diterima. Admin sedang memverifikasi mutasi masuk sebelum pesanan diteruskan ke provider.'
+            : 'Pembayaran tunai sedang diverifikasi kasir agen. Pesanan diproses setelah konfirmasi diterima.',
         category: currentCategory.name,
         categoryCode: currentCategory.id.toUpperCase(),
         product: selectedItem?.l || currentCategory.name,
@@ -311,7 +289,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       };
 
       onTransactionCreated(newRecord);
-      showToast('Transaksi berhasil diproses!');
+      showToast('Pembayaran diterima! Transaksi sedang diproses provider.');
     }, 1200);
   };
 
@@ -367,7 +345,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     : activeMethod.id === 'transfer'
                     ? 'Selesaikan transfer lalu konfirmasi pembayaran'
                     : 'Bayar tunai di agen mitra Hesolvian'
-                  : 'Transaksi berhasil diselesaikan'}
+                  : 'Pembayaran diterima, transaksi sedang diproses'}
               </p>
             </div>
           </div>
@@ -871,16 +849,19 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           {/* STEP 4: SUCCESS RECEIPT */}
           {step === 4 && (
             <div className="text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-[#E4F3EC] text-[#1F7A54] mx-auto flex items-center justify-center shadow-xs">
-                <span className="material-symbols-outlined text-[36px]">check_circle</span>
+              <div className="w-16 h-16 rounded-full bg-[#FCEAE5] text-[#B4432C] mx-auto flex items-center justify-center shadow-xs">
+                <span className="material-symbols-outlined text-[36px] animate-spin">
+                  progress_activity
+                </span>
               </div>
 
               <div>
                 <h4 className="text-2xl font-extrabold text-[#2C211D] tracking-tight">
-                  Transaksi Berhasil!
+                  Pembayaran Diterima!
                 </h4>
                 <p className="text-[13px] text-[#6B5A53] mt-1 max-w-sm mx-auto">
-                  Pembayaran telah diverifikasi dan pesanan diteruskan secara instan ke server provider.
+                  Pesanan Anda sedang diproses oleh server provider. Status akan diperbarui otomatis —
+                  cek halaman Cek Transaksi untuk melihat hasil akhirnya.
                 </p>
               </div>
 
@@ -920,7 +901,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   className="flex-1 bg-[#B4432C] hover:bg-[#8E3220] text-white py-3 px-4 rounded-xl font-bold text-[13px] flex items-center justify-center gap-1.5 shadow-xs cursor-pointer min-h-[44px]"
                 >
                   <span className="material-symbols-outlined text-[18px]">search_check</span>
-                  <span>Lacak di Cek Transaksi</span>
+                  <span>Lacak Status Transaksi</span>
                 </button>
 
                 <button

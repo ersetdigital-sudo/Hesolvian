@@ -40,7 +40,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     items: [
       { label: 'Daftar Pelanggan', href: '/admin/pelanggan', icon: 'contacts', crumb: 'Basis Data', ready: false },
       { label: 'Channel', href: '/admin/channel', icon: 'hub', crumb: 'Mitra', ready: false },
-      { label: 'Manajemen Pesanan', href: '/admin/pesanan', icon: 'shopping_bag', crumb: 'Antrean', ready: false }
+      { label: 'Manajemen Pesanan', href: '/admin/pesanan', icon: 'shopping_bag', crumb: 'Antrean', ready: true }
     ]
   },
   {

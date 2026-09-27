@@ -33,15 +33,9 @@ export default function TransactionCreateForm({ productLabels = [] }: { productL
 
   return (
     <AdminForm action={createTransactionAction} submitLabel="Catat transaksi" cancelHref="/admin/transaksi">
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <Field label="Nama pelanggan" htmlFor="customer_name">
-          <TextInput id="customer_name" name="customer_name" placeholder="Salung Prastyo" required />
-        </Field>
-
-        <Field label="Nomor pelanggan" htmlFor="customer_id" optional hint="Nomor HP, ID pelanggan, atau nomor meter.">
-          <TextInput id="customer_id" name="customer_id" placeholder="081288294910" />
-        </Field>
-      </div>
+      <Field label="Nomor pelanggan" htmlFor="customer_id" optional hint="Nomor HP, ID pelanggan, atau nomor meter.">
+        <TextInput id="customer_id" name="customer_id" placeholder="081288294910" />
+      </Field>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label="Kategori" htmlFor="category_id">

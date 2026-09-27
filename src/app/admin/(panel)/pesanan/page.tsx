@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import DeleteButton from '@/components/admin/DeleteButton';
-import { LinkButton, PageHeader, TransactionStatusPill } from '@/components/admin/ui';
+import { EmptyState, LinkButton, PageHeader, TransactionStatusPill } from '@/components/admin/ui';
 import { deleteTransactionAction } from '@/app/admin/(panel)/actions';
 import { categoryMeta } from '@/lib/categories';
 import { formatDateTime, formatNumber, formatRupiah } from '@/lib/format';
-import { getTransactionStats, listTransactions } from '@/lib/queries';
+import { listTransactions } from '@/lib/queries';
 import type { TransactionRow, TransactionStatus } from '@/lib/types';
 
 export const metadata: Metadata = {
-  title: 'Transaksi — Panel Admin Hesolvian',
+  title: 'Manajemen Pesanan — Panel Admin Hesolvian',
   robots: { index: false, follow: false }
 };
 
@@ -16,13 +16,13 @@ export const dynamic = 'force-dynamic';
 
 const STATUS_FILTERS = [
   { value: 'all', label: 'Semua' },
-  { value: 'success', label: 'Berhasil' },
   { value: 'pending', label: 'Menunggu' },
   { value: 'processing', label: 'Diproses' },
+  { value: 'success', label: 'Berhasil' },
   { value: 'failed', label: 'Gagal' }
 ];
 
-export default async function TransactionsPage({
+export default async function OrdersPage({
   searchParams
 }: {
   searchParams: Promise<{ q?: string; status?: string }>;
@@ -30,16 +30,12 @@ export default async function TransactionsPage({
   const { q = '', status = 'all' } = await searchParams;
 
   let rows: TransactionRow[] = [];
-  let stats = { total: 0, success: 0, pending: 0, revenue: 0 };
   let loadError: string | null = null;
 
   try {
-    [rows, stats] = await Promise.all([
-      listTransactions({ query: q, status: status as TransactionStatus | 'all', limit: 200 }),
-      getTransactionStats()
-    ]);
+    rows = await listTransactions({ query: q, status: status as TransactionStatus | 'all', limit: 200 });
   } catch (error) {
-    loadError = error instanceof Error ? error.message : 'Gagal memuat transaksi.';
+    loadError = error instanceof Error ? error.message : 'Gagal memuat pesanan.';
   }
 
   const buildHref = (nextStatus: string, nextQuery: string) => {
@@ -47,18 +43,18 @@ export default async function TransactionsPage({
     if (nextQuery.trim()) params.set('q', nextQuery.trim());
     if (nextStatus !== 'all') params.set('status', nextStatus);
     const search = params.toString();
-    return `/admin/transaksi${search ? `?${search}` : ''}`;
+    return `/admin/pesanan${search ? `?${search}` : ''}`;
   };
 
   return (
     <div className="mx-auto max-w-[1600px]">
       <PageHeader
-        title="Transaksi"
-        description="Ledger lengkap seluruh transaksi PPOB. Pencarian mendukung ID, nomor pelanggan, dan nama produk."
+        title="Manajemen Pesanan"
+        description="Kelola pesanan pelanggan: ubah status, produk, jumlah, nominal, dan metode pembayaran kapan saja."
         action={
           <LinkButton href="/admin/transaksi/baru">
             <span className="material-symbols-outlined text-[17px]">add</span>
-            Catat transaksi
+            Pesanan baru
           </LinkButton>
         }
       />
@@ -68,21 +64,6 @@ export default async function TransactionsPage({
           {loadError}
         </p>
       )}
-
-      {/* Ringkasan */}
-      <div className="mb-5 grid grid-cols-2 gap-4 xl:grid-cols-4">
-        {[
-          { label: 'Total baris', value: formatNumber(stats.total), tone: 'text-[#1d1c18]' },
-          { label: 'Berhasil', value: formatNumber(stats.success), tone: 'text-[#166534]' },
-          { label: 'Menunggu / diproses', value: formatNumber(stats.pending), tone: 'text-[#92400e]' },
-          { label: 'Pendapatan berhasil', value: formatRupiah(stats.revenue), tone: 'text-[#E2694A]' }
-        ].map((item) => (
-          <div key={item.label} className="rounded-2xl border border-[#e7e5e4] bg-white p-4">
-            <p className="text-[11.5px] font-semibold text-[#78716c]">{item.label}</p>
-            <p className={`mt-2 text-[20px] font-bold leading-none tracking-[-0.02em] ${item.tone}`}>{item.value}</p>
-          </div>
-        ))}
-      </div>
 
       <div className="rounded-2xl border border-[#e7e5e4] bg-white shadow-[0_1px_2px_rgba(29,28,24,0.04)]">
         {/* Toolbar */}
@@ -96,7 +77,7 @@ export default async function TransactionsPage({
               name="q"
               defaultValue={q}
               placeholder="Cari ID, nomor, atau produk…"
-              aria-label="Cari transaksi"
+              aria-label="Cari pesanan"
               className="h-10 w-full rounded-lg border border-[#e7e5e4] bg-white pl-10 pr-3 text-[13px] outline-none transition placeholder:text-[#a8a29e] focus:border-[#E2694A] focus:ring-2 focus:ring-[#E2694A]/20"
             />
             {status !== 'all' && <input type="hidden" name="status" value={status} />}
@@ -115,45 +96,31 @@ export default async function TransactionsPage({
               </a>
             ))}
           </div>
-
-          <a
-            href="/api/admin/export/transactions"
-            download
-            className="inline-flex items-center gap-2 rounded-lg border border-[#e7e5e4] bg-white px-3 py-2.5 text-[12.5px] font-semibold text-[#1d1c18] transition hover:bg-[#fafaf9]"
-          >
-            <span className="material-symbols-outlined text-[16px]">download</span>
-            CSV
-          </a>
         </div>
 
         {/* Tabel */}
         {rows.length === 0 ? (
-          <div className="px-6 py-14 text-center">
-            <span className="material-symbols-outlined text-[38px] text-[#d6d3d1]">receipt_long</span>
-            <p className="mt-3 text-[14px] font-semibold text-[#1d1c18]">
-              {q || status !== 'all' ? 'Tidak ada hasil' : 'Belum ada transaksi'}
-            </p>
-            <p className="mt-1 text-[12.5px] text-[#78716c]">
-              {q || status !== 'all'
-                ? 'Coba ubah kata kunci atau ubah filter status.'
-                : 'Catat transaksi pertama untuk mulai mengisi ledger.'}
-            </p>
-            {!q && status === 'all' && (
-              <div className="mt-5 flex justify-center">
-                <LinkButton href="/admin/transaksi/baru">Catat transaksi</LinkButton>
-              </div>
-            )}
+          <div className="p-6">
+            <EmptyState
+              icon="shopping_bag"
+              title={q || status !== 'all' ? 'Tidak ada pesanan cocok' : 'Belum ada pesanan'}
+              description={
+                q || status !== 'all'
+                  ? 'Coba ubah kata kunci atau filter status.'
+                  : 'Pesanan yang tercatat di ledger akan tampil di sini dan bisa diubah.'
+              }
+              action={<LinkButton href="/admin/transaksi/baru">Catat pesanan</LinkButton>}
+            />
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[960px] border-collapse text-left">
+            <table className="w-full min-w-[880px] border-collapse text-left">
               <thead>
                 <tr className="border-b border-[#f0efed] text-[11px] font-bold uppercase tracking-wide text-[#a8a29e]">
                   <th className="px-5 py-3 sm:px-6">ID &amp; waktu</th>
                   <th className="px-4 py-3">Produk</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3 text-right">Qty</th>
-                  <th className="px-4 py-3 text-right">Satuan</th>
                   <th className="px-4 py-3 text-right">Total</th>
                   <th className="px-4 py-3">Metode</th>
                   <th className="px-4 py-3 text-right sm:px-6">Aksi</th>
@@ -188,15 +155,19 @@ export default async function TransactionsPage({
                         <TransactionStatusPill status={row.status} />
                       </td>
                       <td className="px-4 py-3.5 text-right text-[12.5px] text-[#57534e]">{formatNumber(row.qty)}</td>
-                      <td className="px-4 py-3.5 text-right text-[12.5px] text-[#57534e]">
-                        {formatRupiah(row.unit_price)}
-                      </td>
                       <td className="px-4 py-3.5 text-right text-[13px] font-bold text-[#1d1c18]">
                         {formatRupiah(row.total)}
                       </td>
                       <td className="px-4 py-3.5 text-[12px] text-[#57534e]">{row.method}</td>
                       <td className="px-4 py-3.5 sm:px-6">
                         <div className="flex items-center justify-end gap-1">
+                          <a
+                            href={`/admin/pesanan/${encodeURIComponent(row.id)}`}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-[#e7e5e4] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#1d1c18] transition hover:bg-[#fafaf9]"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">edit</span>
+                            Ubah
+                          </a>
                           <DeleteButton action={deleteTransactionAction} id={row.id} name={row.id} />
                         </div>
                       </td>
@@ -210,7 +181,7 @@ export default async function TransactionsPage({
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#f0efed] px-5 py-3.5 sm:px-6">
           <p className="text-[11.5px] text-[#a8a29e]">
-            Menampilkan {formatNumber(rows.length)} baris
+            Menampilkan {formatNumber(rows.length)} pesanan
             {q ? ` untuk pencarian "${q}"` : ''}
             {status !== 'all' ? ` • filter ${status}` : ''}
           </p>

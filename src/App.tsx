@@ -21,6 +21,7 @@ import { AboutPage } from './components/AboutPage';
 import { TermsPage } from './components/TermsPage';
 import { PrivacyPage } from './components/PrivacyPage';
 import { resolvePublicData } from './lib/publicCatalog';
+import { detectProductKind } from './utils/timelineHelper';
 import type { PublicData } from './lib/publicTypes';
 import type { PaymentSettings } from './lib/types';
 
@@ -215,28 +216,26 @@ export default function App({ publicData = null, payments = null }: AppProps) {
 
   const handlePaymentSuccess = () => {
     if (!currentTrx) return;
+    // Konfirmasi dari pelanggan ("Saya Sudah Bayar") baru menandai pembayaran
+    // diterima. Transaksi BELUM selesai — status masuk "processing" dulu dan
+    // baru menjadi "success" setelah disinkronkan ke server provider.
     const updatedTrx: TransactionRecord = {
       ...currentTrx,
-      status: 'success',
-      statusLabel: 'Berhasil / Selesai',
-      badgeBg: 'bg-[#E4F3EC]',
-      badgeColor: 'text-[#1F7A54]',
-      accentBg: 'bg-[#1F7A54]',
-      clearedAt: 'Baru saja tervalidasi lunas',
-      durationText: 'Lunas Instan',
-      stepActive: 4,
-      stepProgressText: 'Lengkap (4 dari 4 Tahapan)',
-      steps: [
-        { step: 1, title: 'Pesanan Dibuat', subtitle: 'Tagihan siap dibayar', time: currentTrx.createdAt.split(',')[1] || '15:02:40 WIB', status: 'completed', icon: 'receipt_long' },
-        { step: 2, title: 'Pembayaran QRIS', subtitle: 'Mutasi kliring terkonfirmasi lunas', time: 'Baru saja', status: 'completed', icon: 'qr_code_scanner' },
-        { step: 3, title: 'Routing Operator', subtitle: 'Server biller Telkomsel memproses', time: 'Baru saja', status: 'completed', icon: 'hub' },
-        { step: 4, title: 'Paket Data Aktif', subtitle: 'Kuota 50GB berhasil masuk', time: 'Baru saja', status: 'completed', icon: 'verified' },
-      ],
-      tokenLabel: 'Serial Number (SN) Telkomsel Resmi',
-      tokenCode: `SN-TSEL-${Math.floor(1000000000 + Math.random() * 9000000000)}`,
-      tokenSub: 'Paket Data Max 50GB telah aktif pada nomor 0812-8829-4910. Masa aktif 30 hari.',
-      hasCopyToken: true,
-      method: 'QRIS Dinamis (Terverifikasi Lunas)'
+      status: 'processing',
+      statusLabel: 'Diproses Provider',
+      badgeBg: 'bg-[#FCEAE5]',
+      badgeColor: 'text-[#B4432C]',
+      accentBg: 'bg-[#B4432C]',
+      clearedAt: 'Pembayaran diterima, menunggu provider',
+      durationText: 'Sedang Diproses',
+      stepActive: 3,
+      stepProgressText: 'Sedang Diproses (3 dari 4 Tahapan)',
+      steps: currentTrx.steps.map((s, i) => ({
+        ...s,
+        status: i < 2 ? ('completed' as const) : i === 2 ? ('active' as const) : ('waiting' as const)
+      })),
+      processingMessage:
+        'Pembayaran QRIS telah dikonfirmasi. Sistem sedang meminta penyelesaian pesanan ke server provider — status diperbarui otomatis.'
     };
     setTransactions((prev) => ({
       ...prev,
@@ -247,7 +246,31 @@ export default function App({ publicData = null, payments = null }: AppProps) {
   const handleSyncMutasi = () => {
     if (!currentTrx) return;
     if (currentTrx.status !== 'success') {
-      const isPdam = currentTrx.category.toLowerCase().includes('pdam');
+      // Terbitkan SN / token sesuai jenis layanan supaya hasil akhirnya realistis.
+      const kind = detectProductKind(currentTrx);
+      const isPln = kind === 'pln';
+      const isPulsa = kind === 'pulsa' || kind === 'data';
+      const isPdam = kind === 'pdam';
+
+      let tokenLabel = 'Kode Verifikasi Mutasi';
+      let tokenCode = `TRX-OK-${Math.floor(10000000 + Math.random() * 90000000)}`;
+      let tokenSub = 'Kliring dana telah rampung dan layanan telah sah aktif.';
+
+      if (isPln) {
+        const t = () => Math.floor(1000 + Math.random() * 9000);
+        tokenLabel = '20 Digit Token Listrik PLN';
+        tokenCode = `${t()} ${t()} ${t()} ${t()} ${t()}`;
+        tokenSub = `Token listrik telah diterbitkan untuk meteran ${currentTrx.custId}. Masukkan 20 digit angka ini ke meteran prabayar Anda.`;
+      } else if (isPulsa) {
+        tokenLabel = 'Nomor Seri Operator (SN)';
+        tokenCode = `SN-${Math.floor(1000000000 + Math.random() * 9000000000)}`;
+        tokenSub = `Pulsa / paket data telah berhasil diisikan ke nomor ${currentTrx.custId}.`;
+      } else if (isPdam) {
+        tokenLabel = 'Nomor Referensi Pelunasan PDAM Sah';
+        tokenCode = `LUNAS-PDAM-${Math.floor(1000000 + Math.random() * 9000000)}`;
+        tokenSub = 'Tagihan air PDAM telah terbayar lunas ke kas daerah.';
+      }
+
       const updatedTrx: TransactionRecord = {
         ...currentTrx,
         status: 'success',
@@ -260,10 +283,10 @@ export default function App({ publicData = null, payments = null }: AppProps) {
         stepActive: 4,
         stepProgressText: 'Selesai • 4 dari 4 tahap',
         steps: currentTrx.steps.map((s) => ({ ...s, status: 'completed' as const })),
-        tokenLabel: isPdam ? 'Nomor Referensi Pelunasan PDAM Sah' : 'Nomor Serial / Token Resmi',
-        tokenCode: isPdam ? `LUNAS-PDAM-${Math.floor(1000000 + Math.random() * 9000000)}` : `SN-OK-${Math.floor(1000000000 + Math.random() * 9000000000)}`,
-        tokenSub: isPdam ? 'Tagihan air PDAM Tirta Moedal telah terbayar lunas ke kas daerah.' : 'Kliring dana telah rampung dan layanan telah sah aktif.',
-        hasCopyToken: true
+        tokenLabel,
+        tokenCode,
+        tokenSub,
+        hasCopyToken: isPln
       };
       setTransactions((prev) => ({
         ...prev,

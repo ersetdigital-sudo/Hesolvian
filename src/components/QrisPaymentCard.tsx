@@ -43,7 +43,7 @@ export const QrisPaymentCard: React.FC<QrisPaymentCardProps> = ({
     setTimeout(() => {
       setIsVerifying(false);
       onPaymentSuccess();
-      showToast('Pembayaran QRIS tervalidasi lunas! Pesanan langsung diproses.');
+      showToast('Pembayaran QRIS dikonfirmasi! Pesanan sedang diproses provider.');
     }, 1200);
   };
 

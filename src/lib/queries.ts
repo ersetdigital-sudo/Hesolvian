@@ -131,16 +131,22 @@ export async function listTransactions(filter: TransactionFilter = {}): Promise<
 
   const trimmed = query.trim();
   if (trimmed) {
-    // Cari di id / nama / nomor pelanggan / produk.
+    // Cari di id / nomor pelanggan / produk (nama pelanggan tidak dipakai lagi).
     const escaped = trimmed.replace(/[%,]/g, '');
     builder = builder.or(
-      `id.ilike.%${escaped}%,customer_name.ilike.%${escaped}%,customer_id.ilike.%${escaped}%,product_label.ilike.%${escaped}%`
+      `id.ilike.%${escaped}%,customer_id.ilike.%${escaped}%,product_label.ilike.%${escaped}%`
     );
   }
 
   const { data, error } = await builder;
   if (error) throw new Error(error.message);
   return (data ?? []) as TransactionRow[];
+}
+
+export async function getTransaction(id: string): Promise<TransactionRow | null> {
+  const { data, error } = await supabaseAdmin().from('transactions').select('*').eq('id', id).maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as TransactionRow) ?? null;
 }
 
 export interface TransactionStats {
