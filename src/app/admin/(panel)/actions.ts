@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/adminAuth';
-import { destroyCloudinaryAsset } from '@/lib/cloudinary';
+import { deleteImageByUrl } from '@/lib/storage';
 import { describeDbError, supabaseAdmin } from '@/lib/supabase';
 import type { ActionState, BankAccount, ContentStatus, PaymentSettings, TransactionStatus } from '@/lib/types';
 
@@ -111,11 +111,11 @@ export async function deleteProductAction(id: string): Promise<ActionState> {
   }
 
   try {
-    const { data: row } = await supabaseAdmin().from('products').select('image_public_id').eq('id', id).maybeSingle();
+    const { data: row } = await supabaseAdmin().from('products').select('image_url').eq('id', id).maybeSingle();
     const { error } = await supabaseAdmin().from('products').delete().eq('id', id);
     if (error) return { ok: false, message: describeDbError(error) };
 
-    if (row?.image_public_id) await destroyCloudinaryAsset(row.image_public_id).catch(() => ({ ok: false }));
+    await deleteImageByUrl(row?.image_url);
   } catch (error) {
     return { ok: false, message: describeDbError(error) };
   }
@@ -188,11 +188,11 @@ export async function deleteFlashSaleAction(id: string): Promise<ActionState> {
   }
 
   try {
-    const { data: row } = await supabaseAdmin().from('flash_sales').select('image_public_id').eq('id', id).maybeSingle();
+    const { data: row } = await supabaseAdmin().from('flash_sales').select('image_url').eq('id', id).maybeSingle();
     const { error } = await supabaseAdmin().from('flash_sales').delete().eq('id', id);
     if (error) return { ok: false, message: describeDbError(error) };
 
-    if (row?.image_public_id) await destroyCloudinaryAsset(row.image_public_id).catch(() => ({ ok: false }));
+    await deleteImageByUrl(row?.image_url);
   } catch (error) {
     return { ok: false, message: describeDbError(error) };
   }
@@ -489,10 +489,9 @@ function parseBankAccounts(formData: FormData): BankAccount[] {
 /**
  * Simpan konfigurasi metode pembayaran.
  *
- * Gambar QRIS ditangani `ImageUpload` (upload langsung ke Cloudinary + hapus
- * aset lama lewat /api/cloudinary/delete), jadi di sini cukup menyimpan URL dan
- * public_id hasilnya. Aset sengaja TIDAK dihapus lagi dari server supaya gambar
- * yang tidak diganti tidak ikut terbuang.
+ * Gambar QRIS diunggah `ImageUpload` ke /api/upload (Supabase Storage); di sini
+ * cukup menyimpan URL dan path hasilnya. QRIS lama baru dihapus SETELAH simpan
+ * berhasil, supaya membatalkan perubahan tidak membuat QRIS yang aktif hilang.
  */
 export async function savePaymentSettingsAction(
   _prevState: ActionState | null,
@@ -521,6 +520,14 @@ export async function savePaymentSettingsAction(
   };
 
   try {
+    const { data: previous } = await supabaseAdmin()
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'payments')
+      .maybeSingle();
+    const previousImageUrl =
+      (previous?.value as { qris?: { imageUrl?: string | null } } | null)?.qris?.imageUrl ?? null;
+
     const { error } = await supabaseAdmin()
       .from('site_settings')
       .upsert(
@@ -528,6 +535,11 @@ export async function savePaymentSettingsAction(
         { onConflict: 'key' }
       );
     if (error) return { ok: false, message: describeDbError(error) };
+
+    // Simpan sudah berhasil: QRIS lama yang digantikan/dikosongkan aman dihapus.
+    if (previousImageUrl && previousImageUrl !== settings.qris.imageUrl) {
+      await deleteImageByUrl(previousImageUrl);
+    }
   } catch (error) {
     return { ok: false, message: describeDbError(error) };
   }

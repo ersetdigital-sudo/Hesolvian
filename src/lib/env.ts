@@ -36,19 +36,5 @@ export const env = {
   },
   get supabaseServiceRoleKey() {
     return read('SUPABASE_SERVICE_ROLE_KEY');
-  },
-
-  /* ---------- Cloudinary ---------- */
-  get cloudinaryCloudName() {
-    return read('CLOUDINARY_CLOUD_NAME');
-  },
-  get cloudinaryApiKey() {
-    return read('CLOUDINARY_API_KEY');
-  },
-  get cloudinaryApiSecret() {
-    return read('CLOUDINARY_API_SECRET');
-  },
-  get cloudinaryUploadPreset() {
-    return read('CLOUDINARY_UPLOAD_PRESET');
   }
 };

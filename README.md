@@ -8,7 +8,7 @@ Platform loket pembayaran multiaset dan PPOB terpadu dengan pelacakan status tra
 - **React 19** + **TypeScript**
 - **Tailwind CSS v4** (`@tailwindcss/postcss`)
 - **Supabase** (PostgreSQL) — katalog, Flash Sale, artikel, FAQ, ledger transaksi
-- **Cloudinary** — upload gambar bertanda tangan (SIGNED)
+- **Supabase Storage** — upload gambar ke bucket publik `images`
 
 ## Run Locally
 
@@ -52,13 +52,12 @@ src/app/admin/
     artikel/             CRUD artikel (+ gambar sampul)
     pusat-bantuan/       CRUD FAQ yang tampil di halaman publik /bantuan
     transaksi/           Ledger, filter, entri manual, ekspor CSV
-    pembayaran/          Metode Pembayaran: QRIS (gambar diunggah ke Cloudinary),
+    pembayaran/          Metode Pembayaran: QRIS (gambar diunggah ke Supabase Storage),
                          transfer bank, tunai + toggle aktif
     sistem/              Pengaturan nama situs + kontak
     [section]/           Halaman penampung untuk menu yang belum dibangun
 src/app/api/
-  cloudinary/sign        Buat tanda tangan upload (rahasia tetap di server)
-  cloudinary/delete      Hapus aset lama saat gambar diganti
+  upload                 Unggah gambar ke Supabase Storage (khusus admin)
   admin/logout           Akhiri sesi
   admin/export/transactions  Unduh ledger sebagai CSV
 src/components/admin/    Shell, ImageUpload, tabel, form bersama
@@ -69,20 +68,16 @@ src/components/admin/    Shell, ImageUpload, tabel, form bersama
 - RLS aktif di **semua** tabel tanpa policy → `anon` key tidak bisa membaca apa pun.
 - Hanya server yang memakai `SUPABASE_SERVICE_ROLE_KEY`; key ini tidak pernah masuk bundle browser.
 - Sesi admin: cookie `httpOnly` + `sameSite=lax`, token bertanda HMAC-SHA256, berlaku 8 jam.
-- `/api/cloudinary/*` dan semua server action memanggil `requireAdmin()`.
+- `/api/upload` dan semua server action memanggil `requireAdmin()`.
 
-### Upload gambar (Cloudinary, signed)
+### Upload gambar (Supabase Storage)
 
-1. Frontend minta tanda tangan ke `POST /api/cloudinary/sign`.
-2. File dikirim **langsung** ke `https://api.cloudinary.com/v1_1/{cloud}/image/upload`.
-3. Server menyimpan `secure_url` + `public_id` ke kolom `image_url` / `image_public_id`.
-4. Ganti gambar → aset lama dihapus lewat `POST /api/cloudinary/delete`.
+1. Frontend mengirim file ke `POST /api/upload` (hanya admin).
+2. Server memeriksa ukuran dan tipe file dari byte awalnya, lalu menyimpannya ke bucket publik `images` memakai service key. Bucket dibuat otomatis kalau belum ada (lihat juga `supabase/migrations/0007_storage_images.sql`).
+3. Server action menyimpan URL publik + path objek.
+4. Ganti atau kosongkan gambar → file lama dihapus **setelah** formulir berhasil disimpan, jadi membatalkan perubahan tidak membuat gambar aktif hilang.
 
 Validasi: maks **2 MB**, format **JPG/PNG/WEBP**.
-
-Tampilan selalu pakai URL transformasi `f_auto,q_auto,w_800,c_fill` + `loading="lazy"`,
-dan upload preset sudah diset transformasi default `f_auto,q_auto,w_800,c_fill`
-supaya kuota Cloudinary hemat.
 
 ### Identitas & SEO (diatur di kode)
 
@@ -104,8 +99,8 @@ absolut (lokal default-nya `http://localhost:3000`).
 ### Metode pembayaran
 
 Diatur di **`/admin/pembayaran`**, tersimpan sebagai satu key `payments` di
-`site_settings` (jsonb). Gambar QRIS diunggah lewat Cloudinary bertanda tangan
-(`/api/cloudinary/sign`), lalu URL-nya dipakai `QrisPaymentCard` dan langkah
+`site_settings` (jsonb). Gambar QRIS diunggah lewat `/api/upload` ke Supabase Storage,
+lalu URL-nya dipakai `QrisPaymentCard` dan langkah
 pembayaran di `TransactionModal`. Kalau belum ada gambar, kartu memakai kode QR
 contoh. Kalau QRIS dimatikan dari panel, kartu pembayaran menampilkan
 pemberitahuan bahwa metode itu sedang tidak tersedia.
@@ -134,7 +129,7 @@ src/
   app/          Next.js App Router (halaman publik + /admin + /api)
   components/   UI components (client), admin/ untuk panel
   data/         Kategori PPOB, Flash Sale, & FAQ statis (fallback + sumber seed)
-  lib/          Env, Supabase, Cloudinary, auth, query, adapter data, identitas situs
+  lib/          Env, Supabase, Storage, auth, query, adapter data, identitas situs
   types/        Shared TypeScript types
   utils/        Receipt downloader & timeline helpers
   App.tsx       Client shell wiring all state and modals together

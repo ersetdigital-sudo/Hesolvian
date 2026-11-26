@@ -10,9 +10,9 @@ import type { PaymentSettings } from '@/lib/types';
 /**
  * Satu formulir untuk semua metode pembayaran.
  *
- * Gambar QRIS tidak dikirim lewat server kita: `ImageUpload` mengunggahnya
- * langsung ke Cloudinary (signed) lalu menaruh `secure_url` + `public_id` ke
- * hidden input yang ikut ter-submit bersama formulir ini.
+ * Gambar QRIS diunggah `ImageUpload` ke Supabase Storage lewat /api/upload, lalu
+ * URL + path hasilnya ditaruh di hidden input yang ikut ter-submit bersama
+ * formulir ini.
  */
 export default function PaymentSettingsForm({ settings }: { settings: PaymentSettings }) {
   const { qris, transfer, tunai } = settings;
@@ -27,7 +27,7 @@ export default function PaymentSettingsForm({ settings }: { settings: PaymentSet
       <section className="rounded-xl border border-[#f0efed] p-5">
         <SectionHeading
           title="QRIS"
-          subtitle="Cukup unggah gambar QRIS-nya — disimpan di Cloudinary dan ditampilkan di kartu pembayaran pelanggan."
+          subtitle="Cukup unggah gambar QRIS-nya — disimpan di Supabase Storage dan ditampilkan di kartu pembayaran pelanggan."
         />
 
         <div className="mb-5">
@@ -49,7 +49,6 @@ export default function PaymentSettingsForm({ settings }: { settings: PaymentSet
             label="Gambar QRIS"
             hint="JPG/PNG/WEBP, maks 2 MB. Kalau kosong, kartu pembayaran memakai kode QR contoh."
             ratio="square"
-            previewWidth={600}
           />
         </div>
       </section>
@@ -98,8 +97,8 @@ export default function PaymentSettingsForm({ settings }: { settings: PaymentSet
       </section>
 
       <Alert>
-        Gambar QRIS diunggah langsung ke Cloudinary dengan tanda tangan sisi server, jadi API secret
-        tidak pernah masuk ke browser.
+        Gambar QRIS diunggah lewat server ke Supabase Storage, jadi service key tidak pernah masuk ke
+        browser. QRIS lama baru dihapus setelah perubahan disimpan.
       </Alert>
     </AdminForm>
   );

@@ -107,9 +107,9 @@ export interface BankAccount {
  */
 export interface QrisSettings {
   enabled: boolean;
-  /** URL gambar QRIS (transformasi Cloudinary) — null = pakai QR contoh. */
+  /** URL publik gambar QRIS di Supabase Storage — null = pakai QR contoh. */
   imageUrl: string | null;
-  /** public_id Cloudinary, dipakai untuk menghapus aset lama. */
+  /** Path objek di bucket `images` (cadangan; penghapusan memakai imageUrl). */
   imagePublicId: string | null;
 }
 

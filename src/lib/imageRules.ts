@@ -1,5 +1,5 @@
 /**
- * Aturan gambar + helper URL Cloudinary.
+ * Aturan validasi gambar (sisi client).
  *
  * Modul ini SENGAJA tidak mengimpor apa pun dari Node (crypto, env, dll)
  * supaya aman dipakai di client component tanpa ikut membundel modul server.
@@ -24,7 +24,7 @@ export function formatFileSize(bytes: number): string {
 
 export type ImageValidation = { ok: true } | { ok: false; message: string };
 
-/** Validasi ukuran + format sebelum file dikirim ke Cloudinary. */
+/** Validasi ukuran + format sebelum file dikirim ke server. */
 export function validateImageFile(file: File): ImageValidation {
   const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
   const typeOk =
@@ -47,38 +47,4 @@ export function validateImageFile(file: File): ImageValidation {
   }
 
   return { ok: true };
-}
-
-export interface ImageUrlOptions {
-  width?: number;
-  height?: number;
-  crop?: 'fill' | 'fit' | 'scale' | 'thumb';
-}
-
-/**
- * URL tampilan yang sudah dioptimasi.
- *   f_auto -> format paling ringan yang didukung browser (webp/avif)
- *   q_auto -> kompresi otomatis tanpa penurunan kualitas yang kelihatan
- *   w_/h_  -> jangan kirim gambar 4000px untuk thumbnail
- */
-export function optimizedImageUrl(
-  cloudName: string,
-  publicId: string | null | undefined,
-  options: ImageUrlOptions = {}
-): string | null {
-  if (!cloudName || !publicId) return null;
-
-  const { width = 800, height, crop = 'fill' } = options;
-  const parts = ['f_auto', 'q_auto', `w_${width}`, `c_${crop}`];
-  if (height) parts.push(`h_${height}`);
-
-  return `https://res.cloudinary.com/${cloudName}/image/upload/${parts.join(',')}/${publicId}`;
-}
-
-/** Ambil public_id dari sebuah URL Cloudinary (untuk membersihkan aset lama). */
-export function publicIdFromUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
-  const match = url.match(/\/upload\/(?:[^/]+\/)*?(?:v\d+\/)?(.+)$/);
-  if (!match) return null;
-  return match[1].replace(/\.[a-z0-9]+$/i, '');
 }

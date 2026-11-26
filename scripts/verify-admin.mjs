@@ -236,62 +236,29 @@ try {
   log('4. tab Mingguan -> jumlah bar:', tabClick);
   log('   screenshot:', await shot(send, '03-dashboard-weekly'));
 
-  /* ============ 5. CLOUDINARY SIGN + UPLOAD DARI BROWSER ============ */
-  const cld = await evaluate(
+  /* ============ 5. UPLOAD GAMBAR KE SUPABASE STORAGE ============ */
+  const upl = await evaluate(
     send,
     `(async () => {
-      const signRes = await fetch('/api/cloudinary/sign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder: 'produk' })
-      });
-      const sign = await signRes.json();
-      if (!signRes.ok) return { step: 'sign-failed', status: signRes.status, body: sign };
-
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       canvas.width = 640; canvas.height = 640;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#B4432C'; ctx.fillRect(0, 0, 640, 640);
-      ctx.fillStyle = '#FFD839'; ctx.fillRect(80, 80, 480, 480);
-      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
-      const file = new File([blob], 'verifikasi.png', { type: 'image/png' });
-
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#B4432C"; ctx.fillRect(0, 0, 640, 640);
+      ctx.fillStyle = "#FFD839"; ctx.fillRect(80, 80, 480, 480);
+      const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
       const fd = new FormData();
-      fd.append('file', file);
-      fd.append('api_key', sign.apiKey);
-      fd.append('timestamp', String(sign.timestamp));
-      fd.append('upload_preset', sign.uploadPreset);
-      fd.append('folder', sign.folder);
-      fd.append('signature', sign.signature);
+      fd.append("file", new File([blob], "verifikasi.png", { type: "image/png" }));
+      fd.append("folder", "verifikasi");
 
-      const up = await fetch(sign.uploadUrl, { method: 'POST', body: fd });
+      const up = await fetch("/api/upload", { method: "POST", body: fd });
       const upj = await up.json();
-      if (up.status >= 300) return { step: 'upload-failed', status: up.status, body: upj };
+      if (!up.ok) return { step: "upload-failed", status: up.status, body: upj };
 
-      const optimized = 'https://res.cloudinary.com/' + sign.cloudName + '/image/upload/f_auto,q_auto,w_400,c_fill/' + upj.public_id;
-      const head = await fetch(optimized, { method: 'GET' });
-
-      const del = await fetch('/api/cloudinary/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ publicId: upj.public_id })
-      });
-      const delj = await del.json();
-
-      return {
-        step: 'ok',
-        folder: sign.folder,
-        hasSignature: typeof sign.signature === 'string' && sign.signature.length === 40,
-        uploadStatus: up.status,
-        publicId: upj.public_id,
-        optimizedStatus: head.status,
-        deleteStatus: del.status,
-        deleteOk: delj.ok === true,
-        secretLeaked: JSON.stringify(sign).includes('wWDaelf')
-      };
+      const pub = await fetch(upj.url, { cache: "no-store" });
+      return { step: "ok", uploadStatus: up.status, path: upj.path, publicStatus: pub.status, contentType: pub.headers.get("content-type") };
     })()`
   );
-  log('5. cloudinary:', JSON.stringify(cld, null, 2));
+  log("5. upload supabase:", JSON.stringify(upl, null, 2));
 
   /* ============ 6. HALAMAN CRUD ============ */
   const pages = [
@@ -534,7 +501,7 @@ try {
       for (let i = 0; i < 70; i++) {
         await new Promise(r => setTimeout(r, 500));
         // Catatan: properti CSS uppercase bikin innerText jadi
-        // TERSIMPAN DI CLOUDINARY (huruf besar), jadi pencarian case-insensitive.
+        // TERUNGGAH (huruf besar), jadi pencarian case-insensitive.
         const t = document.body.innerText.toLowerCase();
         if (t.includes('berhasil diunggah')) {
           return {
@@ -606,29 +573,6 @@ try {
   );
   log('9d. hapus produk:', deleteResult);
 
-  // Aset Cloudinary ikut terhapus? Cek langsung ke URL transformasinya.
-  const assetCheck = await evaluate(
-    send,
-    `(async () => {
-      const publicId = ${JSON.stringify(uploadResult?.publicId ?? '')};
-      if (!publicId) return { ok: false, why: 'publicId kosong' };
-      const sign = await (await fetch('/api/cloudinary/sign', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder: 'produk' })
-      })).json();
-      const url = 'https://res.cloudinary.com/' + sign.cloudName + '/image/upload/f_auto,q_auto,w_400,c_fill/' + publicId;
-      // Invalidate + propagasi CDN bisa makan waktu beberapa detik,
-      // jadi coba berulang sampai benar-benar 404.
-      let status = 0;
-      for (let i = 0; i < 24; i++) {
-        const res = await fetch(url, { cache: 'no-store' });
-        status = res.status;
-        if (status === 404) break;
-        await new Promise(r => setTimeout(r, 1000));
-      }
-      return { ok: status === 404, status, url };
-    })()`
-  );
-  log('9e. aset Cloudinary ikut terhapus:', JSON.stringify(assetCheck));
 
   log('\n=== CONSOLE ERRORS ===');
   log(consoleErrors.length === 0 ? '(tidak ada)' : consoleErrors.join('\n'));

@@ -5,37 +5,37 @@ import {
   IMAGE_ACCEPT_ATTRIBUTE,
   MAX_IMAGE_BYTES,
   formatFileSize,
-  optimizedImageUrl,
   validateImageFile
 } from '@/lib/imageRules';
 
 /**
  * ============================================================
- * IMAGE UPLOAD (Cloudinary, signed)
+ * IMAGE UPLOAD (Supabase Storage)
  * ============================================================
- * - File dikirim LANGSUNG dari browser ke Cloudinary (tidak lewat server kita).
- * - Tanda tangan dibuat server lewat /api/cloudinary/sign; api_secret tidak
- *   pernah sampai ke browser.
- * - URL asli (`secure_url`) + `public_id` disimpan ke dua hidden input, jadi
- *   komponen ini bisa dipakai di dalam <form> biasa yang submit ke server action.
- * - Gambar lama dihapus dari Cloudinary begitu gambar baru berhasil diunggah.
+ * - File dikirim ke /api/upload; server memvalidasi sesi admin, ukuran dan tipe
+ *   file, lalu menyimpannya ke bucket publik `images`. Service key tidak pernah
+ *   sampai ke browser.
+ * - URL publik + path objek disimpan ke dua hidden input, jadi komponen ini bisa
+ *   dipakai di dalam <form> biasa yang submit ke server action.
+ * - Gambar lama TIDAK dihapus di sini. Server action menghapusnya setelah
+ *   formulir berhasil disimpan, supaya membatalkan perubahan tidak membuat
+ *   gambar yang sedang dipakai hilang.
  */
 
 type UploadStatus = 'idle' | 'uploading' | 'done' | 'error';
 
 export interface ImageUploadProps {
-  /** Nama hidden input untuk URL gambar (disimpan ke kolom image_url). */
+  /** Nama hidden input untuk URL gambar. */
   urlField: string;
-  /** Nama hidden input untuk public_id Cloudinary. */
+  /** Nama hidden input untuk path objek di bucket. */
   publicIdField: string;
   initialUrl?: string | null;
   initialPublicId?: string | null;
-  /** Sub-folder Cloudinary, mis. 'pembayaran'. */
+  /** Sub-folder di bucket, mis. 'pembayaran' (huruf kecil, angka, tanda hubung). */
   folder?: string;
   label?: string;
   hint?: string;
   ratio?: 'square' | 'wide' | 'banner';
-  previewWidth?: number;
 }
 
 const RATIO_CLASS: Record<NonNullable<ImageUploadProps['ratio']>, string> = {
@@ -44,56 +44,45 @@ const RATIO_CLASS: Record<NonNullable<ImageUploadProps['ratio']>, string> = {
   banner: 'aspect-[3/1]'
 };
 
-interface SignResponse {
-  cloudName: string;
-  apiKey: string;
-  timestamp: number;
-  folder: string;
-  uploadPreset: string;
-  signature: string;
-  uploadUrl: string;
-  error?: string;
-}
-
 interface UploadResponse {
-  public_id: string;
-  secure_url: string;
-  error?: { message?: string };
+  url?: string;
+  path?: string;
+  error?: string;
 }
 
 /** Upload memakai XHR supaya progres bisa ditampilkan (fetch tidak bisa). */
 function uploadWithProgress(
-  sign: SignResponse,
   file: File,
+  folder: string,
   onProgress: (percent: number) => void
-): Promise<UploadResponse> {
+): Promise<{ url: string; path: string }> {
   return new Promise((resolve, reject) => {
     const form = new FormData();
     form.append('file', file);
-    form.append('api_key', sign.apiKey);
-    form.append('timestamp', String(sign.timestamp));
-    form.append('upload_preset', sign.uploadPreset);
-    form.append('folder', sign.folder);
-    form.append('signature', sign.signature);
+    form.append('folder', folder);
 
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', sign.uploadUrl);
+    xhr.open('POST', '/api/upload');
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
     };
 
     xhr.onload = () => {
+      let payload: UploadResponse = {};
       try {
-        const payload = JSON.parse(xhr.responseText) as UploadResponse;
-        if (xhr.status >= 200 && xhr.status < 300 && payload.public_id) resolve(payload);
-        else reject(new Error(payload.error?.message ?? `Cloudinary menolak unggahan (${xhr.status}).`));
+        payload = JSON.parse(xhr.responseText) as UploadResponse;
       } catch {
-        reject(new Error('Jawaban Cloudinary tidak bisa dibaca.'));
+        // Jawaban bukan JSON (mis. halaman error platform).
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && payload.url && payload.path) {
+        resolve({ url: payload.url, path: payload.path });
+      } else {
+        reject(new Error(payload.error ?? `Unggahan ditolak (${xhr.status}).`));
       }
     };
 
-    xhr.onerror = () => reject(new Error('Koneksi ke Cloudinary gagal.'));
+    xhr.onerror = () => reject(new Error('Koneksi gagal. Periksa internet lalu coba lagi.'));
     xhr.send(form);
   });
 }
@@ -106,8 +95,7 @@ export default function ImageUpload({
   folder = 'umum',
   label = 'Gambar',
   hint,
-  ratio = 'wide',
-  previewWidth = 800
+  ratio = 'wide'
 }: ImageUploadProps) {
   const [url, setUrl] = useState<string | null>(initialUrl);
   const [publicId, setPublicId] = useState<string | null>(initialPublicId);
@@ -136,19 +124,6 @@ export default function ImageUpload({
     setLocalPreview(null);
   }
 
-  async function deleteRemote(assetId: string | null) {
-    if (!assetId) return;
-    try {
-      await fetch('/api/cloudinary/delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ publicId: assetId })
-      });
-    } catch {
-      // Kegagalan hapus aset lama tidak boleh menggagalkan penyimpanan data.
-    }
-  }
-
   async function handleFile(file: File) {
     setError(null);
     setInfo(null);
@@ -168,36 +143,15 @@ export default function ImageUpload({
     setStatus('uploading');
     setProgress(0);
 
-    const previousPublicId = publicId;
-
     try {
-      const signResponse = await fetch('/api/cloudinary/sign', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folder })
-      });
+      const result = await uploadWithProgress(file, folder, setProgress);
 
-      if (!signResponse.ok) {
-        const payload = (await signResponse.json().catch(() => ({}))) as { error?: string };
-        throw new Error(payload.error ?? 'Gagal meminta tanda tangan unggah. Coba login ulang.');
-      }
-
-      const sign = (await signResponse.json()) as SignResponse;
-      const result = await uploadWithProgress(sign, file, setProgress);
-
-      const optimized = optimizedImageUrl(sign.cloudName, result.public_id, { width: previewWidth }) ?? result.secure_url;
-
-      setUrl(optimized);
-      setPublicId(result.public_id);
-      setPreviewSrc(optimized);
+      setUrl(result.url);
+      setPublicId(result.path);
+      setPreviewSrc(result.url);
       releaseObjectUrl();
       setStatus('done');
-      setInfo(`${file.name} (${formatFileSize(file.size)}) berhasil diunggah.`);
-
-      // Ganti gambar = buang aset lama supaya kuota Cloudinary tidak menumpuk.
-      if (previousPublicId && previousPublicId !== result.public_id) {
-        await deleteRemote(previousPublicId);
-      }
+      setInfo(`${file.name} (${formatFileSize(file.size)}) berhasil diunggah. Simpan perubahan untuk menerapkan.`);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : 'Unggahan gagal.');
       setStatus('error');
@@ -207,8 +161,7 @@ export default function ImageUpload({
     }
   }
 
-  async function handleRemove() {
-    const removeId = publicId;
+  function handleRemove() {
     setUrl(null);
     setPublicId(null);
     setPreviewSrc(null);
@@ -216,7 +169,6 @@ export default function ImageUpload({
     setInfo('Gambar dihapus. Simpan perubahan untuk menerapkan.');
     setStatus('idle');
     releaseObjectUrl();
-    await deleteRemote(removeId);
   }
 
   const shown = localPreview ?? previewSrc;
@@ -268,7 +220,7 @@ export default function ImageUpload({
         {status === 'done' && (
           <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-[#dcfce7] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#166534]">
             <span className="material-symbols-outlined text-[13px]">check_circle</span>
-            Tersimpan di Cloudinary
+            Terunggah
           </span>
         )}
       </div>
